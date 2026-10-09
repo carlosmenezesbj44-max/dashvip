@@ -1242,6 +1242,31 @@
         font-weight: 600;
         letter-spacing: 0.01em;
       }
+      .return-main-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        margin: 0 0 12px 10px;
+        padding: 8px 12px;
+        border: 1px solid rgba(57, 255, 20, 0.28);
+        border-radius: 8px;
+        color: #b8d0c1;
+        background: rgba(0, 26, 20, 0.55);
+        font-size: 0.84rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+      .return-main-link:hover {
+        color: #39ff14;
+        border-color: rgba(57, 255, 20, 0.62);
+        background: rgba(0, 200, 83, 0.1);
+      }
+      .return-main-link:focus-visible {
+        outline: 2px solid #39ff14;
+        outline-offset: 3px;
+      }
       .tab-btn:hover:not(.active) {
         background: rgba(127, 91, 255, 0.18);
       }
@@ -3045,9 +3070,10 @@
           <button id="tabDashboardBtn" class="tab-btn active" type="button">Dashboard</button>
           <button id="tabProductivityBtn" class="tab-btn" type="button">Produtividade</button>
           <button id="tabInstallationsBtn" class="tab-btn" type="button">Instalacoes</button>
-          <button id="tabSettingsBtn" class="tab-btn" type="button">Configuracoes</button>
+          <button id="tabSettingsBtn" class="tab-btn" type="button">Configurações</button>
         </div>
       </section>
+      <a class="return-main-link" href="/">← Voltar ao dashboard principal</a>
       <p class="header-subtitle">Volume por hora, assuntos, produtividade, instalacoes e SLA.</p>
 
       <section id="dashboardTab" class="tab-content active">

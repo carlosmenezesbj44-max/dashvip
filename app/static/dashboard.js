@@ -5162,6 +5162,10 @@ if (tabOperationsBtn) {
 }
 tabSettingsBtn.addEventListener("click", () => setActiveTab("settings"));
 
+if (new URLSearchParams(window.location.search).get("tab") === "settings") {
+  setActiveTab("settings");
+}
+
 if (installationsApplyDateBtn) {
   installationsApplyDateBtn.addEventListener("click", () => {
     loadInstallations().catch((error) => {
