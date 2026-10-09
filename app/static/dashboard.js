@@ -4496,9 +4496,25 @@ async function saveSettings() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(collectSettingsPayload()),
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.detail || "Erro ao salvar configuracoes.");
+    const detail = data.detail;
+    const message = typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((item) => {
+          if (typeof item === "string") return item;
+          if (item && typeof item === "object") {
+            const location = Array.isArray(item.loc) ? item.loc.join(" → ") : "";
+            const description = item.msg || item.message || "";
+            return [location, description].filter(Boolean).join(": ");
+          }
+          return String(item);
+        }).filter(Boolean).join("; ")
+        : detail && typeof detail === "object"
+          ? detail.message || detail.msg || ""
+          : "";
+    throw new Error(message || `Erro ao salvar configuracoes (HTTP ${response.status}).`);
   }
   fillSettingsForm(data.values || {});
   applyAutoRefreshFromSettings(data.values || {});
