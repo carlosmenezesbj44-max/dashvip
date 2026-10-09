@@ -1,0 +1,278 @@
+﻿from __future__ import annotations
+
+from datetime import date, datetime
+from typing import Any
+
+from ..repository import (
+    fetch_operation_board_entries,
+    fetch_operation_board_header,
+    fetch_operation_board_references,
+    replace_operation_board_entries,
+    upsert_operation_board_header,
+)
+
+DEFAULT_TIME_SLOTS = [
+    "08:00 - 09:00",
+    "09:00 - 10:00",
+    "10:00 - 11:00",
+    "11:00 - 12:00",
+    "12:00 - 13:00",
+    "13:00 - 14:00",
+    "14:00 - 15:00",
+    "15:00 - 16:00",
+    "16:00 - 17:00",
+    "17:00 - 18:00",
+    "18:00 - 19:00",
+    "19:00 - 20:00",
+]
+
+
+class OperationsBoardService:
+    def get_board(self, target_date: date) -> dict[str, Any]:
+        entry_date = str(target_date)
+        header = fetch_operation_board_header(entry_date) or {
+            "entry_date": entry_date,
+            "responsible_name": "",
+            "shift_label": "08:00 - 20:00",
+            "general_notes": "",
+            "updated_at": None,
+        }
+        references = fetch_operation_board_references(entry_date)
+        saved_entries = fetch_operation_board_entries(entry_date)
+        generated = False
+        entries = saved_entries
+        if not entries:
+            entries = _build_suggested_entries(references.get("orders", []))
+            generated = bool(entries)
+        return {
+            "header": header,
+            "entries": entries,
+            "generated": generated,
+            "summary": _build_board_summary(
+                references.get("orders", []),
+                entries,
+                has_saved_entries=bool(saved_entries),
+            ),
+            "references": {
+                **references,
+                "time_slots": DEFAULT_TIME_SLOTS,
+            },
+        }
+
+    def save_board(
+        self,
+        target_date: date,
+        *,
+        responsible_name: str | None,
+        shift_label: str | None,
+        general_notes: str | None,
+        entries: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        entry_date = str(target_date)
+        references = fetch_operation_board_references(entry_date)
+        order_lookup = {
+            str(item["os_id"]): item
+            for item in references["orders"]
+            if item.get("os_id") is not None
+        }
+
+        cleaned_entries: list[dict[str, Any]] = []
+        for raw in entries:
+            slot_label = _clean_text(raw.get("slot_label"))
+            os_id = _clean_text(raw.get("os_id"))
+            if not slot_label and not _clean_text(raw.get("team_label")) and not os_id:
+                continue
+
+            order_ref = order_lookup.get(os_id or "")
+            subject_name = _clean_text(raw.get("subject_name")) or _pick(order_ref, "subject_name")
+            branch_name = _clean_text(raw.get("branch_name")) or _pick(order_ref, "branch_name")
+            technician_names = _clean_text(raw.get("technician_names")) or _pick(
+                order_ref, "technician_name"
+            )
+            team_label = technician_names or _clean_text(raw.get("team_label")) or _pick(
+                order_ref, "technician_name"
+            )
+
+            cleaned_entries.append(
+                {
+                    "slot_label": slot_label,
+                    "team_label": team_label,
+                    "os_id": os_id,
+                    "subject_name": subject_name,
+                    "branch_name": branch_name,
+                    "technician_names": technician_names,
+                    "opening_note": _clean_text(raw.get("opening_note")),
+                    "occurrence_note": _clean_text(raw.get("occurrence_note")),
+                    "start_at": _clean_text(raw.get("start_at")),
+                    "displacement_at": _clean_text(raw.get("displacement_at")),
+                    "executed_at": _clean_text(raw.get("executed_at")),
+                    "finalized_at": _clean_text(raw.get("finalized_at")),
+                    "contact_at": _clean_text(raw.get("contact_at")),
+                    "status_label": _clean_text(raw.get("status_label")),
+                }
+            )
+
+        upsert_operation_board_header(
+            entry_date=entry_date,
+            responsible_name=_clean_text(responsible_name),
+            shift_label=_clean_text(shift_label),
+            general_notes=_clean_text(general_notes),
+        )
+        replace_operation_board_entries(entry_date, cleaned_entries)
+        return self.get_board(target_date)
+
+
+def _clean_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _pick(row: dict[str, Any] | None, key: str) -> str | None:
+    if row is None:
+        return None
+    value = row.get(key)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _build_suggested_entries(orders: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    suggested_rows: list[dict[str, Any]] = []
+    sorted_orders = sorted(orders, key=_sort_order_key)
+
+    for order in sorted_orders:
+        opened_dt = _parse_timestamp(order.get("opened_at"))
+        execution_dt = _parse_timestamp(order.get("execution_started_at"))
+        closed_dt = _parse_timestamp(order.get("closed_at"))
+
+        slot_label = _slot_for_datetime(execution_dt or opened_dt or closed_dt)
+        if slot_label is None:
+            slot_label = DEFAULT_TIME_SLOTS[0]
+
+        technician_name = _clean_text(order.get("technician_name"))
+        opened_at = _format_time(opened_dt)
+        execution_at = _format_time(execution_dt)
+        closed_at = _format_time(closed_dt)
+
+        opening_note = (
+            f"Abertura automatica via IXC as {opened_at}."
+            if opened_at
+            else "OS coletada automaticamente via IXC."
+        )
+        occurrence_parts: list[str] = []
+        if execution_at:
+            occurrence_parts.append(f"Execucao iniciada as {execution_at}.")
+        if closed_at:
+            occurrence_parts.append(f"Finalizada as {closed_at}.")
+        if not occurrence_parts:
+            occurrence_parts.append("Aguardando inicio do atendimento.")
+
+        suggested_rows.append(
+            {
+                "slot_label": slot_label,
+                "team_label": technician_name or "Equipe nao informada",
+                "os_id": _clean_text(order.get("os_id")),
+                "subject_name": _clean_text(order.get("subject_name")),
+                "branch_name": _clean_text(order.get("branch_name")),
+                "technician_names": technician_name,
+                "opening_note": opening_note,
+                "occurrence_note": " ".join(occurrence_parts),
+                "start_at": opened_at,
+                "displacement_at": "",
+                "executed_at": execution_at,
+                "finalized_at": closed_at,
+                "contact_at": "",
+                "status_label": _resolve_status_label(execution_dt, closed_dt),
+            }
+        )
+
+    return suggested_rows
+
+
+def _build_board_summary(
+    orders: list[dict[str, Any]],
+    entries: list[dict[str, Any]],
+    *,
+    has_saved_entries: bool,
+) -> dict[str, Any]:
+    technicians = {
+        str(order["technician_name"]).strip()
+        for order in orders
+        if order.get("technician_name") and str(order["technician_name"]).strip()
+    }
+    open_count = 0
+    execution_count = 0
+    closed_count = 0
+
+    for order in orders:
+        execution_dt = _parse_timestamp(order.get("execution_started_at"))
+        closed_dt = _parse_timestamp(order.get("closed_at"))
+        if closed_dt:
+            closed_count += 1
+        elif execution_dt:
+            execution_count += 1
+        else:
+            open_count += 1
+
+    return {
+        "total_orders": len(orders),
+        "open_orders": open_count,
+        "execution_orders": execution_count,
+        "closed_orders": closed_count,
+        "technicians_identified": len(technicians),
+        "entry_count": len(entries),
+        "has_saved_entries": has_saved_entries,
+    }
+
+
+def _sort_order_key(order: dict[str, Any]) -> tuple[int, datetime]:
+    for priority, field in enumerate(("execution_started_at", "opened_at", "closed_at")):
+        parsed = _parse_timestamp(order.get(field))
+        if parsed is not None:
+            return priority, parsed
+    return 99, datetime.max
+
+
+def _slot_for_datetime(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    hour = value.hour
+    if hour < 8:
+        return DEFAULT_TIME_SLOTS[0]
+    if hour >= 19:
+        return DEFAULT_TIME_SLOTS[-1]
+    slot_index = max(0, min(len(DEFAULT_TIME_SLOTS) - 1, hour - 8))
+    return DEFAULT_TIME_SLOTS[slot_index]
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    text = _clean_text(value)
+    if not text:
+        return None
+    normalized = text.replace("T", " ").replace("Z", "")
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f"):
+        try:
+            return datetime.strptime(normalized, fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
+def _format_time(value: datetime | None) -> str:
+    if value is None:
+        return ""
+    return value.strftime("%H:%M")
+
+
+def _resolve_status_label(execution_dt: datetime | None, closed_dt: datetime | None) -> str:
+    if closed_dt:
+        return "Finalizada"
+    if execution_dt:
+        return "Em execucao"
+    return "Aberta"

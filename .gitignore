@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/
+.env.*
+!.env.example
+*.bak
+*.bak-*
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
+.deploy-backups/

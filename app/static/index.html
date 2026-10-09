@@ -1,0 +1,3745 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VIP Telecom Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --bg-1: #f7f3ff;
+        --bg-2: #eee8ff;
+        --surface: #ffffff;
+        --surface-alt: #f6f2ff;
+        --text: #21173f;
+        --muted: #7568a6;
+        --primary: #7c3aed;
+        --danger: #cc3f4f;
+        --ok: #1f8a48;
+        --border: #dcd1ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 20% 0%, #e8dcff 0, transparent 35%),
+          radial-gradient(circle at 85% 15%, #d8c5ff 0, transparent 30%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      html {
+        overflow-x: hidden;
+      }
+      body.modal-open {
+        overflow: hidden;
+      }
+      .container {
+        width: min(1200px, 95vw);
+        margin: 28px auto 48px;
+      }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .title h1 {
+        margin: 0;
+        font-size: clamp(1.4rem, 2.7vw, 2rem);
+      }
+      .title p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tab-btn {
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 10px 14px;
+      }
+      .tab-btn.active {
+        border: 0;
+        background: var(--primary);
+        color: #fff;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      input,
+      button,
+      select {
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        font: inherit;
+      }
+      button {
+        border: 0;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+      .subject-filter-box {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        min-width: 0;
+      }
+      .subject-filter-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+      .subject-filter-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .subject-filter-row select {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .subject-filter-add,
+      .subject-filter-remove {
+        width: 42px;
+        min-width: 42px;
+        padding: 9px 12px;
+      }
+      .subject-filter-remove:disabled {
+        display: none;
+      }
+      .subject-filter-remove {
+        background: linear-gradient(130deg, #7d3e3e, #692f2f);
+      }
+      .filter-hint {
+        margin: 4px 0 0;
+        width: 100%;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .dashboard-filter-controls {
+        display: grid;
+        grid-template-columns: 170px 170px 360px 190px 170px;
+        align-items: end;
+        gap: 10px;
+        justify-content: start;
+        max-width: max-content;
+      }
+      .dashboard-filter-controls input,
+      .dashboard-filter-controls select,
+      .dashboard-filter-controls button {
+        width: 100%;
+        min-width: 0;
+      }
+      #startDateInput {
+        order: 1;
+      }
+      #endDateInput {
+        order: 2;
+      }
+      .dashboard-filter-controls .subject-filter-box {
+        order: 3;
+        width: 360px;
+      }
+      #subjectGroupFilter {
+        order: 4;
+      }
+      #branchFilter {
+        order: 5;
+      }
+      #createSubjectGroupBtn {
+        order: 6;
+      }
+      #deleteSubjectGroupBtn {
+        order: 7;
+      }
+      #applyFiltersBtn {
+        order: 8;
+      }
+      #clearFiltersBtn {
+        order: 9;
+      }
+      .dashboard-filter-controls .filter-hint {
+        grid-column: 1 / -1;
+        order: 10;
+      }
+      .meta {
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      .grid-cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 6px 20px rgba(37, 25, 80, 0.1);
+      }
+      .metric-card {
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+      .metric-card:hover {
+        transform: translateY(-2px);
+        border-color: #b9a3ff;
+        box-shadow: 0 10px 24px rgba(37, 25, 80, 0.16);
+      }
+      .metric-card:focus-visible {
+        outline: 2px solid #8b5cf6;
+        outline-offset: 2px;
+      }
+      .card .label {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .card .value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+      .value.ok {
+        color: var(--ok);
+      }
+      .value.danger {
+        color: var(--danger);
+      }
+      .section {
+        margin-top: 14px;
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 6px 20px rgba(37, 25, 80, 0.1);
+      }
+      .panel h2 {
+        margin: 0 0 10px;
+        font-size: 1.05rem;
+      }
+      .double {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .double > .panel {
+        min-width: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(240px, 1fr));
+        gap: 10px 12px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field label {
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+      .field input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+      }
+      .field-check {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+      }
+      .settings-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .btn-ghost {
+        background: #55309c;
+      }
+      .settings-feedback {
+        margin-top: 10px;
+        color: var(--muted);
+      }
+      .table-scroll {
+        overflow-x: auto;
+      }
+      .board-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .board-summary {
+        margin-bottom: 12px;
+      }
+      .board-summary .card {
+        min-height: 92px;
+      }
+      .board-summary-note {
+        margin: 8px 0 12px;
+        color: var(--muted);
+      }
+      .board-header {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(180px, 1fr));
+        gap: 10px 12px;
+        margin-bottom: 12px;
+      }
+      .board-technician-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: min(420px, 95vw);
+      }
+      .board-tech-label {
+        font-size: 0.82rem;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .board-technician-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .board-technician-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .board-technician-row select {
+        min-width: 220px;
+        flex: 1 1 auto;
+      }
+      .board-technician-add,
+      .board-technician-remove {
+        min-width: 42px;
+        padding: 9px 11px;
+      }
+      .board-technician-remove {
+        background: linear-gradient(130deg, #7d3e3e, #692f2f);
+      }
+      .board-status-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: min(320px, 95vw);
+      }
+      .board-status-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .board-status-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .board-status-row select {
+        min-width: 190px;
+        flex: 1 1 auto;
+      }
+      .board-status-add,
+      .board-status-remove {
+        min-width: 42px;
+        padding: 9px 11px;
+      }
+      .board-status-remove {
+        background: linear-gradient(130deg, #7d3e3e, #692f2f);
+      }
+      .board-delete-list {
+        background: linear-gradient(130deg, #7d3e3e, #692f2f);
+      }
+      #boardSavedListSelect,
+      #boardDelayReportSavedListSelect {
+        min-width: 220px;
+      }
+      #boardDelayReportSavedListSelect {
+        max-width: min(480px, 62vw);
+      }
+      #boardDelayReportModalOverlay .modal-header-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .board-notes {
+        width: 100%;
+        min-height: 84px;
+        resize: vertical;
+      }
+      .board-table input,
+      .board-table textarea {
+        width: 100%;
+        min-width: 0;
+      }
+      .board-table textarea {
+        min-height: 72px;
+        resize: vertical;
+      }
+      .board-table .journal-main-cell,
+      .board-table .journal-customer-cell,
+      .board-table .journal-occurrence-cell {
+        min-width: 0;
+      }
+      .board-table th:nth-child(1),
+      .board-table td:nth-child(1) {
+        width: 11%;
+      }
+      .board-table th:nth-child(2),
+      .board-table td:nth-child(2) {
+        width: 34%;
+      }
+      .board-table th:nth-child(3),
+      .board-table td:nth-child(3) {
+        width: 16%;
+      }
+      .board-table th:nth-child(4),
+      .board-table td:nth-child(4) {
+        width: 29%;
+      }
+      .board-table th:nth-child(5),
+      .board-table td:nth-child(5) {
+        width: 10%;
+      }
+      .board-table .journal-customer-cell {
+        vertical-align: top;
+      }
+      .board-table .journal-customer-cell input {
+        min-height: 30px;
+      }
+      .board-table .journal-main-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.7fr;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .board-table .journal-main-grid .journal-os-wrap,
+      .board-table .journal-main-grid .journal-time-wrap {
+        min-width: 0;
+      }
+      .board-table .journal-label {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      .board-table .journal-meta {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .board-table .journal-meta-item {
+        font-size: 0.65rem;
+        color: #675a92;
+        background: #f3efff;
+        border: 1px solid #ddd1ff;
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+      .board-table .journal-occurrence-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(80px, 1fr));
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .board-table .journal-actions-cell {
+        width: 90px;
+      }
+      .board-table .journal-actions-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .board-table .journal-actions-wrap button {
+        width: 100%;
+      }
+      .board-comment-pill {
+        border: 1px solid #ddd1ff;
+        background: #f3efff;
+        color: #5b4d85;
+        border-radius: 999px;
+        font-size: 0.64rem;
+        text-align: center;
+        padding: 2px 6px;
+      }
+      #boardCommentTextarea {
+        min-height: 140px;
+        width: 100%;
+        resize: vertical;
+      }
+      .board-row-warning {
+        background: #fff4f4;
+      }
+      .board-row-warning td {
+        border-bottom-color: #efc6cc;
+      }
+      .details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 8px 12px;
+      }
+      .details-item {
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      .details-item .key {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .details-item .value {
+        margin-top: 4px;
+        font-weight: 600;
+        word-break: break-word;
+      }
+      .field-hint {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .field-hint.warning {
+        color: var(--danger);
+        font-weight: 600;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(27, 16, 61, 0.52);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1200;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal-panel {
+        width: min(1100px, 96vw);
+        max-height: 86vh;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 18px 42px rgba(28, 17, 63, 0.3);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-alt);
+      }
+      .modal-header h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .modal-header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .modal-header-actions button {
+        width: auto;
+      }
+      .modal-close {
+        width: auto;
+      }
+      .modal-body {
+        padding: 12px 14px 14px;
+        overflow: auto;
+      }
+      :root {
+        --bg-1: #f5f1ff;
+        --bg-2: #ece6ff;
+        --surface: rgba(255, 255, 255, 0.88);
+        --surface-solid: #ffffff;
+        --surface-alt: #f6f2ff;
+        --text: #21173f;
+        --muted: #6f61a1;
+        --primary: #7c3aed;
+        --primary-strong: #5b21b6;
+        --danger: #cc3f4f;
+        --ok: #1f8a48;
+        --warn: #d48806;
+        --info: #4338ca;
+        --border: #d7c9ff;
+      }
+      body {
+        background:
+          radial-gradient(circle at 8% 0%, rgba(124, 58, 237, 0.24) 0, transparent 30%),
+          radial-gradient(circle at 90% 15%, rgba(139, 92, 246, 0.22) 0, transparent 34%),
+          linear-gradient(140deg, var(--bg-1), var(--bg-2));
+      }
+      .container {
+        width: min(1380px, 96vw);
+      }
+      .topbar {
+        margin-bottom: 18px;
+      }
+      .title h1 {
+        letter-spacing: 0.01em;
+      }
+      .title p {
+        font-size: 0.95rem;
+      }
+      .tabs {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 5px;
+        backdrop-filter: blur(8px);
+      }
+      .tab-btn {
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        padding: 9px 13px;
+      }
+      .tab-btn:hover:not(.active) {
+        background: rgba(124, 58, 237, 0.14);
+      }
+      .tab-btn.active {
+        background: linear-gradient(130deg, var(--primary), var(--primary-strong));
+        box-shadow: 0 10px 24px rgba(91, 33, 182, 0.28);
+      }
+      .panel,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: 0 14px 30px rgba(33, 19, 75, 0.12);
+        backdrop-filter: blur(8px);
+      }
+      .panel-soft {
+        background: linear-gradient(
+          140deg,
+          rgba(255, 255, 255, 0.88),
+          rgba(238, 232, 255, 0.9)
+        );
+      }
+      button {
+        background: linear-gradient(130deg, var(--primary), var(--primary-strong));
+      }
+      .btn-ghost {
+        background: linear-gradient(130deg, #5935a9, #432579);
+      }
+      input,
+      button,
+      select,
+      textarea {
+        border-radius: 11px;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+      }
+      .chart-wrap {
+        position: relative;
+        min-height: 250px;
+        margin-bottom: 12px;
+      }
+      .chart-wrap-lg {
+        min-height: 300px;
+      }
+      .table-shell {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--surface-solid);
+      }
+      .table-scroll {
+        overflow: auto;
+      }
+      .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+      }
+      .modern-table th,
+      .modern-table td {
+        border-bottom: 1px solid #ebe3ff;
+        padding: 6px 7px;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.18;
+        font-size: 0.82rem;
+      }
+      .modern-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: linear-gradient(180deg, #f7f3ff, #efe8ff);
+        color: #5f4f90;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        font-size: 0.66rem;
+        font-weight: 700;
+      }
+      .modern-table tbody tr:nth-child(even) {
+        background: #fcfaff;
+      }
+      .modern-table tbody tr:hover {
+        background: #f3ecff;
+      }
+      .board-table {
+        table-layout: fixed;
+      }
+      .board-table th,
+      .board-table td {
+        font-size: 0.68rem;
+        padding: 5px 4px;
+      }
+      .board-table input,
+      .board-table textarea {
+        font-size: 0.68rem;
+        padding: 4px 5px;
+      }
+      .board-table textarea {
+        min-height: 50px;
+      }
+      .table-wide {
+        min-width: 0;
+        table-layout: fixed;
+      }
+      .table-wide td:first-child,
+      .table-wide td:last-child {
+        white-space: normal;
+      }
+      #cardOrdersModalOverlay .modal-panel {
+        width: min(1220px, 98vw);
+      }
+      #cardOrdersModalOverlay .modern-table th,
+      #cardOrdersModalOverlay .modern-table td {
+        font-size: 0.78rem;
+        padding: 5px 6px;
+      }
+      #cardOrdersModalOverlay .table-scroll {
+        overflow: auto;
+      }
+      #cardOrdersModalOverlay .modern-table {
+        min-width: 980px;
+      }
+      #cardOrdersModalOverlay .modern-table thead th:nth-child(10) {
+        width: 130px;
+      }
+      #cardOrdersModalOverlay .relato-preview,
+      #productivityTab .relato-preview,
+      #boardDelayReportModalOverlay .relato-preview {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #cardOrdersModalOverlay .relato-snippet,
+      #productivityTab .relato-snippet,
+      #boardDelayReportModalOverlay .relato-snippet {
+        display: inline-block;
+        max-width: 96px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #6f63a0;
+        font-size: 0.72rem;
+      }
+      #productivityTab .relato-snippet {
+        max-width: 160px;
+      }
+      #boardDelayReportModalOverlay .relato-snippet {
+        max-width: 220px;
+      }
+      #cardOrdersModalOverlay .relato-toggle-btn,
+      #productivityTab .relato-toggle-btn,
+      #boardDelayReportModalOverlay .relato-toggle-btn {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #4d2ea7;
+        font-weight: 600;
+        font-size: 0.68rem;
+        padding: 3px 9px;
+        cursor: pointer;
+        min-width: 74px;
+      }
+      #cardOrdersModalOverlay .relato-toggle-btn:hover,
+      #productivityTab .relato-toggle-btn:hover,
+      #boardDelayReportModalOverlay .relato-toggle-btn:hover {
+        background: #f0e9ff;
+      }
+      #cardOrdersModalOverlay .relato-detail-row td,
+      #productivityTab .relato-detail-row td,
+      #boardDelayReportModalOverlay .relato-detail-row td {
+        padding: 0 6px 8px;
+        background: #faf7ff;
+      }
+      #cardOrdersModalOverlay .relato-detail-box,
+      #productivityTab .relato-detail-box,
+      #boardDelayReportModalOverlay .relato-detail-box {
+        margin: 8px 0 2px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #ffffff;
+        max-height: 220px;
+        overflow: auto;
+        line-height: 1.32;
+        color: #3f2f73;
+      }
+      #productivityTab .relato-detail-box {
+        max-height: 180px;
+      }
+      #cardOrdersModalOverlay .relato-detail-empty,
+      #productivityTab .relato-detail-empty,
+      #boardDelayReportModalOverlay .relato-detail-empty {
+        color: #8576b5;
+        font-style: italic;
+      }
+      #boardDelayReportModalOverlay .modal-panel {
+        width: min(1240px, 98vw);
+      }
+      #boardDelayReportContent {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .delay-report-tech {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: #ffffff;
+      }
+      .delay-report-tech h4 {
+        margin: 0 0 8px;
+        font-size: 0.98rem;
+      }
+      .delay-report-tech .meta {
+        margin: 0 0 8px;
+      }
+      #boardDelayReportTableWrap .modern-table {
+        min-width: 920px;
+      }
+      #boardDelayReportTableWrap .modern-table th,
+      #boardDelayReportTableWrap .modern-table td {
+        font-size: 0.76rem;
+      }
+      .delay-type-chip {
+        font-size: 0.68rem;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .chip-ok {
+        color: #136835;
+        background: #e9f9ef;
+        border-color: #bbe8cb;
+      }
+      .chip-danger {
+        color: #9d2432;
+        background: #feecef;
+        border-color: #f6c1c9;
+      }
+      .chip-warn {
+        color: #915200;
+        background: #fff6e8;
+        border-color: #f2d6a6;
+      }
+      .chip-info {
+        color: #0e596f;
+        background: #e7f6fb;
+        border-color: #bbdfed;
+      }
+      .chip-pending {
+        color: #5f4b0f;
+        background: #fef9e7;
+        border-color: #f0e0a8;
+      }
+      .chip-neutral {
+        color: #5d4f8d;
+        background: #f3efff;
+        border-color: #ddd1ff;
+      }
+      #delayReportPrintHost {
+        display: none;
+      }
+      @media print {
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+        body.print-delay-report * {
+          visibility: hidden !important;
+        }
+        body.print-delay-report #delayReportPrintHost,
+        body.print-delay-report #delayReportPrintHost * {
+          visibility: visible !important;
+        }
+        body.print-delay-report #delayReportPrintHost {
+          display: block !important;
+          position: fixed;
+          inset: 0;
+          overflow: visible;
+          background: #ffffff;
+          padding: 0;
+          margin: 0;
+          z-index: 9999;
+        }
+        body.print-delay-report #delayReportPrintHost .print-report {
+          padding: 8px;
+          font-family: "Segoe UI", Arial, sans-serif;
+          color: #241d3c;
+          font-size: 11px;
+        }
+        body.print-delay-report #delayReportPrintHost h1 {
+          margin: 0 0 8px;
+          font-size: 18px;
+          color: #4c1d95;
+        }
+        body.print-delay-report #delayReportPrintHost .meta {
+          margin: 0 0 4px;
+          color: #6a5d99;
+        }
+        body.print-delay-report #delayReportPrintHost .summary {
+          margin: 0 0 12px;
+          color: #584b86;
+          font-weight: 600;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-block {
+          margin-bottom: 14px;
+          border: 1px solid #ddd1ff;
+          border-radius: 8px;
+          overflow: hidden;
+          break-inside: avoid;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-block h3 {
+          margin: 0;
+          padding: 8px 10px;
+          background: #f3efff;
+          color: #4d2f8f;
+          font-size: 13px;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-meta {
+          margin: 0;
+          padding: 6px 10px 8px;
+          color: #665a94;
+          font-size: 11px;
+        }
+        body.print-delay-report #delayReportPrintHost table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: auto;
+        }
+        body.print-delay-report #delayReportPrintHost th,
+        body.print-delay-report #delayReportPrintHost td {
+          border: 1px solid #e3d8ff;
+          padding: 4px 6px;
+          vertical-align: top;
+          text-align: left;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          line-height: 1.28;
+        }
+        body.print-delay-report #delayReportPrintHost th {
+          background: #f7f3ff;
+          color: #573a95;
+          font-weight: 700;
+          font-size: 10px;
+        }
+        body.print-delay-report #delayReportPrintHost tbody tr {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        body.print-delay-report #delayReportPrintHost .print-relato-row td {
+          background: #f1f5fd;
+          padding: 6px 8px;
+          font-size: 10px;
+          line-height: 1.38;
+          white-space: pre-wrap;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+        body.print-delay-report #delayReportPrintHost .print-relato-label {
+          font-weight: 700;
+          margin-bottom: 2px;
+        }
+        body.print-delay-report #delayReportPrintHost .print-relato-text {
+          white-space: pre-wrap;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+      }
+      @media (max-width: 960px) {
+        .grid-cards {
+          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+        .double {
+          grid-template-columns: 1fr;
+        }
+        .settings-grid {
+          grid-template-columns: 1fr;
+        }
+        .board-header {
+          grid-template-columns: 1fr 1fr;
+        }
+        .details-grid {
+          grid-template-columns: 1fr;
+        }
+        .chart-wrap-lg {
+          min-height: 250px;
+        }
+        .dashboard-filter-controls {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          width: 100%;
+        }
+        .dashboard-filter-controls .subject-filter-box {
+          grid-column: 1 / -1;
+          width: 100%;
+        }
+        .dashboard-filter-controls .filter-hint {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (max-width: 520px) {
+        .controls {
+          width: 100%;
+        }
+        input,
+        button,
+        select {
+          width: 100%;
+        }
+        .modal-close {
+          width: auto;
+        }
+        .board-table th,
+        .board-table td {
+          font-size: 0.64rem;
+          padding: 4px 3px;
+        }
+        .board-technician-row {
+          flex-wrap: nowrap;
+        }
+        .board-technician-row .board-technician-add,
+        .board-technician-row .board-technician-remove {
+          width: auto;
+          min-width: 40px;
+          padding: 7px 9px;
+        }
+        .board-status-row {
+          flex-wrap: nowrap;
+        }
+        .board-status-row .board-status-add,
+        .board-status-row .board-status-remove {
+          width: auto;
+          min-width: 40px;
+          padding: 7px 9px;
+        }
+        .board-table .journal-main-grid,
+        .board-table .journal-occurrence-grid {
+          grid-template-columns: 1fr;
+        }
+        .subject-filter-row {
+          flex-wrap: nowrap;
+        }
+        .subject-filter-row .subject-filter-add,
+        .subject-filter-row .subject-filter-remove {
+          width: auto;
+          min-width: 42px;
+          padding: 8px 10px;
+        }
+        .subject-filter-box,
+        .dashboard-filter-controls {
+          max-width: none;
+        }
+      }
+      /* Smart Queue logo-based theme */
+      :root {
+        --bg-1: #060b2f;
+        --bg-2: #0b1448;
+        --surface: rgba(17, 28, 78, 0.9);
+        --surface-solid: #121f59;
+        --surface-alt: #182968;
+        --text: #e9efff;
+        --muted: #aab6de;
+        --primary: #7f5bff;
+        --primary-strong: #00bff8;
+        --danger: #ff5c79;
+        --ok: #39d98a;
+        --warn: #f6bf64;
+        --info: #72d6ff;
+        --border: #2f4489;
+      }
+      body {
+        background:
+          radial-gradient(circle at 14% 2%, rgba(255, 78, 194, 0.18) 0, transparent 32%),
+          radial-gradient(circle at 86% 12%, rgba(0, 191, 248, 0.15) 0, transparent 38%),
+          radial-gradient(circle at 50% 108%, rgba(127, 91, 255, 0.14) 0, transparent 45%),
+          linear-gradient(145deg, var(--bg-1), var(--bg-2));
+      }
+      .tabs {
+        background: linear-gradient(150deg, rgba(20, 34, 88, 0.82), rgba(15, 28, 74, 0.88));
+        border-color: #334b93;
+        box-shadow: 0 10px 24px rgba(3, 9, 33, 0.35);
+      }
+      .header-topbar {
+        display: grid;
+        grid-template-columns: minmax(390px, 470px) 1fr;
+        align-items: center;
+        justify-content: flex-start;
+        column-gap: clamp(24px, 2.8vw, 42px);
+        margin: 0 -16px 12px;
+        padding: 12px 30px;
+        min-height: 118px;
+        background: linear-gradient(180deg, rgba(15, 27, 76, 0.97), rgba(10, 20, 58, 0.98));
+        border-top: 1px solid rgba(140, 111, 232, 0.45);
+        border-bottom: 1px solid rgba(86, 122, 211, 0.5);
+        border-radius: 0;
+        box-shadow: 0 8px 20px rgba(5, 11, 35, 0.28);
+      }
+      .brand-title {
+        display: inline-flex;
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+      }
+      .brand-logo-shell {
+        display: block;
+        width: 100%;
+      }
+      .brand-logo {
+        display: block;
+        width: min(100%, 430px);
+        max-height: 136px;
+        max-width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius: 0;
+        filter: drop-shadow(0 6px 14px rgba(4, 10, 34, 0.28));
+      }
+      .header-topbar .tabs {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: clamp(28px, 3vw, 50px);
+        flex-wrap: nowrap;
+        min-width: 0;
+        width: auto;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .header-topbar .tab-btn {
+        padding: 0;
+        min-height: auto;
+        border: 0;
+        background: transparent;
+        color: #f2f6ff;
+        font-size: clamp(1.12rem, 1.45vw, 1.6rem);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        opacity: 0.92;
+        transform: none;
+      }
+      .header-topbar .tab-btn:hover:not(.active) {
+        background: transparent;
+        color: #ffffff;
+        opacity: 1;
+        transform: none;
+      }
+      .header-topbar .tab-btn.active {
+        border: 0;
+        background: transparent;
+        color: #ffffff;
+        box-shadow: none;
+        opacity: 1;
+        text-shadow: 0 0 12px rgba(126, 184, 255, 0.28);
+      }
+      .header-subtitle {
+        margin: 0 0 12px;
+        padding-left: 10px;
+        color: #b7c3e7;
+        font-size: 0.98rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+      .tab-btn:hover:not(.active) {
+        background: rgba(127, 91, 255, 0.18);
+      }
+      .tab-btn.active {
+        background: linear-gradient(125deg, #ff4fc8 0%, #855dff 46%, #00c8ff 100%);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(10, 20, 58, 0.45);
+      }
+      .panel,
+      .card {
+        background: linear-gradient(
+          155deg,
+          rgba(22, 36, 92, 0.95) 0%,
+          rgba(17, 30, 79, 0.96) 58%,
+          rgba(14, 24, 66, 0.96) 100%
+        );
+        border-color: #35509d;
+        box-shadow: 0 16px 34px rgba(5, 12, 39, 0.34);
+      }
+      .panel-soft {
+        background: linear-gradient(145deg, rgba(24, 41, 104, 0.95), rgba(16, 30, 79, 0.96));
+      }
+      button {
+        background: linear-gradient(125deg, #7f5bff, #00bff8);
+      }
+      .btn-ghost {
+        background: linear-gradient(130deg, #425ca6, #2b4488);
+      }
+      input,
+      select,
+      textarea {
+        background: #101f59;
+        border-color: #3852a0;
+        color: var(--text);
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #95a7d9;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: #00c8ff;
+        box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.26);
+      }
+      .table-shell {
+        background: #101d55;
+        border-color: #35509d;
+      }
+      .modern-table th,
+      .modern-table td {
+        border-bottom: 1px solid #2a3f80;
+      }
+      .modern-table thead th {
+        background: linear-gradient(180deg, #172a6c, #14235d);
+        color: #d0dcff;
+      }
+      .modern-table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .modern-table tbody tr:hover {
+        background: rgba(0, 191, 248, 0.09);
+      }
+      .board-table .journal-meta-item {
+        color: #b7c6ef;
+        background: #13245e;
+        border-color: #3852a0;
+      }
+      .board-comment-pill {
+        border-color: #3852a0;
+        background: #13245e;
+        color: #adc0ec;
+      }
+      .modal-overlay {
+        background: rgba(3, 7, 25, 0.72);
+      }
+      .modal-panel {
+        background: linear-gradient(155deg, rgba(20, 35, 92, 0.97), rgba(14, 26, 72, 0.98));
+        border-color: #35509d;
+        box-shadow: 0 22px 48px rgba(3, 8, 28, 0.55);
+      }
+      #cardOrdersModalOverlay .relato-snippet,
+      #productivityTab .relato-snippet,
+      #boardDelayReportModalOverlay .relato-snippet {
+        color: #b5c3ea;
+      }
+      #cardOrdersModalOverlay .relato-toggle-btn,
+      #productivityTab .relato-toggle-btn,
+      #boardDelayReportModalOverlay .relato-toggle-btn {
+        background: #162967;
+        border-color: #3a56a6;
+        color: #d9e5ff;
+      }
+      #cardOrdersModalOverlay .relato-toggle-btn:hover,
+      #productivityTab .relato-toggle-btn:hover,
+      #boardDelayReportModalOverlay .relato-toggle-btn:hover {
+        background: #203784;
+      }
+      #cardOrdersModalOverlay .relato-detail-row td,
+      #productivityTab .relato-detail-row td,
+      #boardDelayReportModalOverlay .relato-detail-row td {
+        background: #12225b;
+      }
+      #cardOrdersModalOverlay .relato-detail-box,
+      #productivityTab .relato-detail-box,
+      #boardDelayReportModalOverlay .relato-detail-box {
+        background: #101e54;
+        border-color: #35509d;
+        color: #d8e4ff;
+      }
+      #cardOrdersModalOverlay .relato-detail-empty,
+      #productivityTab .relato-detail-empty,
+      #boardDelayReportModalOverlay .relato-detail-empty {
+        color: #9eb2df;
+      }
+      .chip-ok {
+        color: #8ef3be;
+        background: rgba(22, 104, 66, 0.45);
+        border-color: #33a56f;
+      }
+      .chip-danger {
+        color: #ffb0c0;
+        background: rgba(122, 28, 58, 0.44);
+        border-color: #cc4a71;
+      }
+      .chip-warn {
+        color: #ffdf9f;
+        background: rgba(116, 82, 27, 0.46);
+        border-color: #bf8d36;
+      }
+      .chip-info {
+        color: #9adfff;
+        background: rgba(27, 84, 134, 0.44);
+        border-color: #3f76b3;
+      }
+      .chip-pending {
+        color: #ffe3aa;
+        background: rgba(108, 87, 36, 0.46);
+        border-color: #be9d56;
+      }
+      .chip-neutral {
+        color: #c2cfee;
+        background: rgba(22, 44, 97, 0.56);
+        border-color: #3b57a2;
+      }
+      .delay-report-tech {
+        background: #111f58;
+        border-color: #35509d;
+      }
+      #dashboardTab .dashboard-filters-panel {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #3a57aa;
+        background:
+          linear-gradient(160deg, rgba(24, 40, 101, 0.96), rgba(15, 28, 76, 0.97)),
+          linear-gradient(120deg, rgba(255, 79, 200, 0.08), rgba(0, 200, 255, 0.08));
+        box-shadow:
+          0 0 0 1px rgba(0, 200, 255, 0.08) inset,
+          0 14px 30px rgba(4, 10, 33, 0.42);
+      }
+      #dashboardTab .dashboard-filters-panel::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #ff4fc8 0%, #8a5dff 50%, #00c8ff 100%);
+      }
+      #dashboardTab .dashboard-filters-panel::after {
+        content: "";
+        position: absolute;
+        right: -120px;
+        top: -120px;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 200, 255, 0.22) 0%, rgba(0, 200, 255, 0) 68%);
+        pointer-events: none;
+      }
+      #dashboardTab .dashboard-filters-panel h2 {
+        position: relative;
+        z-index: 1;
+      }
+      #dashboardTab .weekly-overview-panel {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #3652a2;
+        background:
+          linear-gradient(155deg, rgba(18, 31, 82, 0.96), rgba(12, 22, 63, 0.97)),
+          linear-gradient(120deg, rgba(255, 79, 200, 0.08), rgba(0, 200, 255, 0.08));
+        box-shadow:
+          0 10px 26px rgba(4, 9, 32, 0.38),
+          0 0 0 1px rgba(127, 91, 255, 0.12) inset;
+      }
+      #dashboardTab .weekly-overview-panel::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(255, 79, 200, 0.9), rgba(127, 91, 255, 0.88), rgba(0, 200, 255, 0.9));
+      }
+      #dashboardTab .weekly-overview-header {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(127, 91, 255, 0.28);
+        padding-bottom: 10px;
+      }
+      #dashboardTab .weekly-overview-header h2 {
+        margin: 0;
+        color: #eef4ff;
+        font-size: 0.98rem;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-overview-range {
+        color: #b9c7eb;
+        font-size: 0.82rem;
+        white-space: nowrap;
+      }
+      #dashboardTab .weekly-scope {
+        color: #b9c7eb;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      #dashboardTab .weekly-date-picker {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+      }
+      #dashboardTab .weekly-date-picker span {
+        color: #8fa0d3;
+        font-size: 0.74rem;
+      }
+      #dashboardTab .weekly-date-picker input {
+        width: 122px;
+        min-height: 30px;
+        padding: 5px 7px;
+        border-color: #3a57aa;
+        border-radius: 8px;
+        background: rgba(12, 22, 63, 0.9);
+        color: #d8e4ff;
+        font-size: 0.76rem;
+      }
+      #dashboardTab .weekly-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 14px;
+      }
+      #dashboardTab .weekly-summary-card {
+        position: relative;
+        z-index: 1;
+        min-height: 118px;
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 0 0 1px rgba(127, 91, 255, 0.12) inset;
+      }
+      #dashboardTab .weekly-summary-card.is-highlight {
+        border-color: rgba(255, 79, 200, 0.68);
+      }
+      #dashboardTab .weekly-summary-value {
+        color: #eef4ff;
+        font-size: 2.2rem;
+        font-weight: 700;
+        line-height: 1.05;
+      }
+      #dashboardTab .weekly-summary-label {
+        margin-top: 6px;
+        color: #b9c7eb;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-summary-meta {
+        margin-top: 4px;
+        color: #8fa0d3;
+        font-size: 0.76rem;
+      }
+      #dashboardTab .weekly-branches {
+        position: relative;
+        z-index: 1;
+        margin-top: 14px;
+      }
+      #dashboardTab .weekly-daily-section {
+        position: relative;
+        z-index: 1;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(127, 91, 255, 0.28);
+      }
+      #dashboardTab .weekly-daily-section h3 {
+        margin: 0 0 10px;
+        color: #eef4ff;
+        font-size: 0.92rem;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-daily-bars {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+        gap: 10px;
+        min-height: 190px;
+        align-items: end;
+      }
+      #dashboardTab .weekly-daily-bar {
+        display: grid;
+        grid-template-rows: 22px 150px 22px;
+        gap: 5px;
+        min-width: 0;
+        text-align: center;
+      }
+      #dashboardTab .weekly-daily-value {
+        color: #eef4ff;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      #dashboardTab .weekly-daily-track {
+        display: flex;
+        align-items: flex-end;
+        min-height: 150px;
+        border-bottom: 1px solid rgba(0, 200, 255, 0.18);
+      }
+      #dashboardTab .weekly-daily-fill {
+        width: 100%;
+        border-radius: 6px 6px 0 0;
+        background: linear-gradient(180deg, rgba(0, 200, 255, 0.9), rgba(127, 91, 255, 0.55));
+        box-shadow: 0 0 16px rgba(0, 200, 255, 0.18);
+      }
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-value,
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-label {
+        color: #ff4fc8;
+      }
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-fill {
+        background: linear-gradient(180deg, rgba(255, 79, 200, 0.96), rgba(0, 200, 255, 0.72));
+        box-shadow: 0 0 20px rgba(255, 79, 200, 0.28);
+      }
+      #dashboardTab .weekly-daily-label {
+        color: #b9c7eb;
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+      #dashboardTab .weekly-daily-empty {
+        grid-column: 1 / -1;
+        color: #8fa0d3;
+        text-align: center;
+      }
+      #dashboardTab .weekly-daily-cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 14px;
+        margin-top: 12px;
+      }
+      #dashboardTab .weekly-daily-card {
+        min-height: 78px;
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 12px;
+        text-align: center;
+      }
+      #dashboardTab .weekly-daily-card .value {
+        color: #eef4ff;
+        font-size: 1.45rem;
+        font-weight: 700;
+      }
+      #dashboardTab .weekly-daily-card .label {
+        margin-top: 4px;
+        color: #b9c7eb;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-shift-section {
+        position: relative;
+        z-index: 1;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(127, 91, 255, 0.28);
+      }
+      #dashboardTab .weekly-shift-section h3 {
+        margin: 0 0 10px;
+        color: #eef4ff;
+        font-size: 0.92rem;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-shift-cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+        gap: 14px;
+      }
+      #dashboardTab .weekly-shift-card {
+        min-height: 150px;
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 18px 16px;
+        text-align: center;
+      }
+      #dashboardTab .weekly-shift-label {
+        color: #8fa0d3;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #dashboardTab .weekly-shift-percent {
+        margin-top: 12px;
+        color: #00c8ff;
+        font-size: 2rem;
+        font-weight: 700;
+      }
+      #dashboardTab .weekly-shift-count {
+        margin-top: 4px;
+        color: #eef4ff;
+        font-size: 1.15rem;
+        font-weight: 700;
+      }
+      #dashboardTab .weekly-shift-track {
+        height: 4px;
+        margin-top: 14px;
+        border-radius: 999px;
+        background: rgba(143, 160, 211, 0.22);
+        overflow: hidden;
+      }
+      #dashboardTab .weekly-shift-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: #00c8ff;
+      }
+      #dashboardTab .weekly-shift-card.is-morning .weekly-shift-percent {
+        color: #39d98a;
+      }
+      #dashboardTab .weekly-shift-card.is-morning .weekly-shift-fill {
+        background: #39d98a;
+      }
+      #dashboardTab .weekly-shift-card.is-night .weekly-shift-percent {
+        color: #ff4fc8;
+      }
+      #dashboardTab .weekly-shift-card.is-night .weekly-shift-fill {
+        background: #ff4fc8;
+      }
+      #installationsTab .installations-panel {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #3652a2;
+        background:
+          linear-gradient(155deg, rgba(18, 31, 82, 0.96), rgba(12, 22, 63, 0.97)),
+          linear-gradient(120deg, rgba(255, 79, 200, 0.08), rgba(0, 200, 255, 0.08));
+      }
+      #installationsTab .installations-panel::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(255, 79, 200, 0.9), rgba(127, 91, 255, 0.88), rgba(0, 200, 255, 0.9));
+      }
+      #installationsTab .installations-header,
+      #installationsTab .installations-grid {
+        position: relative;
+        z-index: 1;
+      }
+      #installationsTab .installations-header {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid rgba(127, 91, 255, 0.28);
+        padding-bottom: 10px;
+      }
+      #installationsTab .installations-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        align-items: flex-end;
+        gap: 10px;
+        width: 100%;
+      }
+      #installationsTab .installations-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      #installationsTab .installations-filter-field label {
+        color: #8fa0d3;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-actions input {
+        min-width: 0;
+      }
+      #installationsTab .installations-actions select,
+      #installationsTab .installations-actions input {
+        width: 100%;
+      }
+      #installationsTab .installations-filter-field.is-wide {
+        grid-column: span 3;
+      }
+      #installationsTab .installations-filter-field.is-subject {
+        grid-column: span 2;
+      }
+      #installationsTab .installations-filter-field.is-subject .subject-filter-box {
+        width: 100%;
+      }
+      #installationsTab .installations-filter-field.is-subject.is-collapsed .subject-filter-box {
+        display: none;
+      }
+      #installationsTab .installations-subject-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      #installationsTab .installations-subject-summary {
+        min-width: 0;
+        color: #b9c7eb;
+        font-size: 0.78rem;
+        font-weight: 700;
+        overflow: hidden;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #installationsTab #installationsToggleSubjectsBtn {
+        margin-top: 6px;
+        width: 100%;
+        min-height: 38px;
+      }
+      #installationsTab .installations-saved-list {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(118px, 0.65fr) minmax(96px, 0.55fr) minmax(88px, 0.5fr);
+        gap: 8px;
+        align-items: end;
+        padding: 10px;
+        border: 1px solid rgba(71, 99, 184, 0.55);
+        border-radius: 8px;
+        background: rgba(8, 18, 52, 0.44);
+      }
+      #installationsTab .installations-saved-list .installations-filter-field {
+        min-width: 0;
+      }
+      #installationsTab .installations-collaborator-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      #installationsTab .installations-collaborator-summary {
+        color: #b9c7eb;
+        font-size: 0.78rem;
+        font-weight: 700;
+        min-width: 0;
+        overflow: hidden;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #installationsTab .installations-actions > button,
+      #installationsTab .installations-saved-list > button,
+      #installationsTab #installationsToggleCollaboratorsBtn {
+        width: 100%;
+        min-height: 44px;
+      }
+      #installationsTab .collaborator-panel[hidden] {
+        display: none;
+      }
+      #installationsTab .collaborator-toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        align-items: center;
+      }
+      #installationsTab .collaborator-toolbar input {
+        min-width: 0;
+      }
+      #installationsTab .collaborator-list {
+        max-height: 210px;
+        overflow: auto;
+        border: 1px solid #314a92;
+        border-radius: 8px;
+        background: rgba(8, 18, 52, 0.74);
+        padding: 8px;
+      }
+      #installationsTab .collaborator-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 8px;
+        border-radius: 7px;
+        color: #d9e4ff;
+        font-size: 0.82rem;
+      }
+      #installationsTab .collaborator-option:hover {
+        background: rgba(0, 200, 255, 0.1);
+      }
+      #installationsTab .collaborator-option input {
+        width: 16px;
+        min-width: 16px;
+        height: 16px;
+      }
+      #installationsTab .installations-header h2 {
+        margin: 0;
+        color: #eef4ff;
+        font-size: 0.98rem;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-header span {
+        color: #b9c7eb;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      #installationsTab .installations-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      #installationsTab .installations-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      #installationsTab .weekly-summary-card {
+        min-height: 118px;
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 16px;
+        text-align: center;
+      }
+      #installationsTab .weekly-summary-card.is-highlight {
+        border-color: rgba(255, 79, 200, 0.68);
+      }
+      #installationsTab .weekly-summary-value {
+        color: #eef4ff;
+        font-size: 2.2rem;
+        font-weight: 700;
+        line-height: 1.05;
+      }
+      #installationsTab .weekly-summary-label {
+        margin-top: 6px;
+        color: #b9c7eb;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #installationsTab .weekly-summary-meta {
+        margin-top: 4px;
+        color: #8fa0d3;
+        font-size: 0.76rem;
+      }
+      #installationsTab .weekly-daily-section,
+      #installationsTab .weekly-daily-bars,
+      #installationsTab .weekly-daily-bar,
+      #installationsTab .weekly-daily-value,
+      #installationsTab .weekly-daily-track,
+      #installationsTab .weekly-daily-fill,
+      #installationsTab .weekly-daily-label,
+      #installationsTab .weekly-daily-empty {
+        position: relative;
+      }
+      #installationsTab .weekly-daily-section {
+        z-index: 1;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(127, 91, 255, 0.28);
+      }
+      #installationsTab .weekly-daily-section h3 {
+        margin: 0 0 10px;
+        color: #eef4ff;
+        font-size: 0.92rem;
+        text-transform: uppercase;
+      }
+      #installationsTab .weekly-daily-bars {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+        gap: 10px;
+        min-height: 190px;
+        align-items: end;
+      }
+      #installationsTab .weekly-daily-bar {
+        display: grid;
+        grid-template-rows: 22px 150px 22px;
+        gap: 5px;
+        min-width: 0;
+        text-align: center;
+      }
+      #installationsTab .weekly-daily-value {
+        color: #eef4ff;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      #installationsTab .weekly-daily-track {
+        display: flex;
+        align-items: flex-end;
+        min-height: 150px;
+        border-bottom: 1px solid rgba(0, 200, 255, 0.18);
+      }
+      #installationsTab .weekly-daily-fill {
+        width: 100%;
+        border-radius: 6px 6px 0 0;
+        background: linear-gradient(180deg, rgba(255, 79, 200, 0.96), rgba(0, 200, 255, 0.72));
+      }
+      #installationsTab .weekly-daily-label {
+        color: #b9c7eb;
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+      #installationsTab .weekly-daily-empty {
+        grid-column: 1 / -1;
+        color: #8fa0d3;
+        text-align: center;
+      }
+      #installationsTab .installations-tech-list {
+        display: grid;
+        gap: 12px;
+      }
+      #installationsTab .installations-tech-card {
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 14px 16px;
+      }
+      #installationsTab .installations-tech-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #eef4ff;
+      }
+      #installationsTab .installations-tech-name {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+        gap: 8px;
+      }
+      #installationsTab .installations-rank {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+        border-radius: 999px;
+        background: rgba(0, 200, 255, 0.14);
+        border: 1px solid rgba(0, 200, 255, 0.46);
+        color: #00c8ff;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+      #installationsTab .installations-tech-head span {
+        color: #00c8ff;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+      #installationsTab .installations-tech-track {
+        height: 6px;
+        margin-top: 12px;
+        border-radius: 999px;
+        background: rgba(143, 160, 211, 0.22);
+        overflow: hidden;
+      }
+      #installationsTab .installations-tech-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff4fc8, #00c8ff);
+      }
+      #installationsTab .installations-top-installer {
+        margin-top: 14px;
+        border: 1px solid #3a57aa;
+        border-radius: 8px;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        padding: 16px;
+        text-align: center;
+      }
+      #installationsTab .installations-top-installer .label {
+        color: #8fa0d3;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-top-installer .name {
+        margin-top: 8px;
+        color: #eef4ff;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+      #installationsTab .installations-top-installer .meta {
+        margin: 4px 0 0;
+      }
+      #installationsTab .installations-subtabs {
+        position: relative;
+        z-index: 1;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(127, 91, 255, 0.28);
+      }
+      #installationsTab .installations-subtab-nav {
+        display: inline-flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 4px;
+        border: 1px solid rgba(58, 87, 170, 0.8);
+        border-radius: 8px;
+        background: rgba(8, 18, 52, 0.55);
+      }
+      #installationsTab .installations-subtab-btn {
+        min-height: 38px;
+        border-radius: 7px;
+        background: transparent;
+        color: #b9c7eb;
+        font-size: 0.78rem;
+      }
+      #installationsTab .installations-subtab-btn.active {
+        background: linear-gradient(130deg, #7f5bff, #00c8ff);
+        color: #ffffff;
+      }
+      #installationsTab .installations-subtab-panel[hidden] {
+        display: none;
+      }
+      #installationsTab .installations-ranking-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      #installationsTab .installations-ranking-header h3 {
+        margin: 0;
+        color: #eef4ff;
+        font-size: 0.86rem;
+        letter-spacing: 0.04em;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-ranking-header span {
+        color: #d9e4ff;
+        font-size: 0.76rem;
+        line-height: 1.35;
+        max-width: 52%;
+        text-align: right;
+      }
+      #installationsTab .installations-ranking-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        background: rgba(4, 18, 30, 0.55);
+      }
+      #installationsTab .installations-ranking-table th,
+      #installationsTab .installations-ranking-table td {
+        border-bottom: 1px solid rgba(57, 217, 138, 0.16);
+        padding: 11px 12px;
+        color: #f2f7ff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-align: left;
+      }
+      #installationsTab .installations-ranking-table th {
+        background: rgba(5, 16, 31, 0.78);
+        color: #aebbd1;
+        font-size: 0.66rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-ranking-table th:nth-child(2),
+      #installationsTab .installations-ranking-table td:nth-child(2) {
+        width: 26%;
+      }
+      #installationsTab .installations-ranking-table th:first-child,
+      #installationsTab .installations-ranking-table td:first-child {
+        width: 50px;
+        text-align: center;
+      }
+      #installationsTab .installations-ranking-table th:not(:nth-child(2)),
+      #installationsTab .installations-ranking-table td:not(:nth-child(2)) {
+        text-align: right;
+      }
+      #installationsTab .installations-ranking-table th:first-child,
+      #installationsTab .installations-ranking-table td:first-child {
+        text-align: center;
+      }
+      #installationsTab .installations-ranking-table tbody tr {
+        background: rgba(5, 15, 29, 0.62);
+      }
+      #installationsTab .installations-ranking-table tbody tr:nth-child(even) {
+        background: rgba(7, 22, 39, 0.62);
+      }
+      #installationsTab .installations-ranking-table tbody tr:hover {
+        background: rgba(57, 255, 20, 0.08);
+      }
+      #installationsTab .installations-ranking-table tbody tr.is-top {
+        background: rgba(57, 255, 20, 0.1);
+      }
+      #installationsTab .installations-tech-cell {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+      #installationsTab .installations-tech-cell strong {
+        color: #ffffff;
+        font-size: 0.82rem;
+        line-height: 1.25;
+      }
+      #installationsTab .installations-tech-cell span {
+        color: #9cadb7;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      #installationsTab .installations-number-cell {
+        display: inline-grid;
+        gap: 1px;
+        justify-items: end;
+      }
+      #installationsTab .installations-number-cell strong {
+        color: #ffffff;
+        font-size: 0.86rem;
+        line-height: 1.15;
+      }
+      #installationsTab .installations-number-cell span {
+        color: #8fa2aa;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+      #installationsTab .productivity-rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid #39ff14;
+        border-radius: 999px;
+        color: #39ff14;
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+      #installationsTab tr.is-top .productivity-rank-badge {
+        background: rgba(57, 255, 20, 0.16);
+        border-color: #39ff14;
+        color: #ffffff;
+      }
+      #installationsTab .subject-median-bars {
+        display: grid;
+        gap: 14px;
+        padding: 12px;
+        border: 1px solid rgba(58, 87, 170, 0.8);
+        border-radius: 8px;
+        background: rgba(4, 18, 30, 0.38);
+      }
+      #installationsTab .subject-median-row {
+        display: grid;
+        grid-template-columns: minmax(150px, 230px) minmax(220px, 1fr) minmax(78px, auto);
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(143, 160, 211, 0.1);
+      }
+      #installationsTab .subject-median-row:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+      #installationsTab .subject-median-name {
+        color: #d9e4ff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.2;
+        overflow: hidden;
+        text-align: right;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      #installationsTab .subject-median-plot {
+        display: grid;
+        gap: 7px;
+        min-width: 0;
+      }
+      #installationsTab .subject-median-track {
+        position: relative;
+        height: 18px;
+        border-radius: 4px;
+        background: rgba(230, 235, 245, 0.1);
+        overflow: hidden;
+      }
+      #installationsTab .subject-median-fill {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        min-width: 4px;
+        border-radius: inherit;
+        padding-right: 7px;
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      #installationsTab .subject-median-fill.is-average {
+        background: linear-gradient(90deg, #2f80ed, #4f9cff);
+      }
+      #installationsTab .subject-median-fill.is-median {
+        background: linear-gradient(90deg, #ff7a1a, #ff9a3d);
+      }
+      #installationsTab .subject-median-side-values {
+        display: grid;
+        gap: 7px;
+        justify-items: start;
+      }
+      #installationsTab .subject-median-side-values span {
+        font-size: 0.72rem;
+        font-weight: 800;
+        line-height: 18px;
+        white-space: nowrap;
+      }
+      #installationsTab .subject-median-side-values .is-average {
+        color: #4f9cff;
+      }
+      #installationsTab .subject-median-side-values .is-median {
+        color: #ff8a2a;
+      }
+      #installationsTab .subject-median-value {
+        color: #eef4ff;
+        font-size: 0.8rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      #installationsTab .subject-median-value span {
+        color: #8fa0d3;
+        font-weight: 700;
+      }
+      #installationsTab .installations-empty {
+        color: #8fa0d3;
+      }
+      #dashboardTab .weekly-branches h3 {
+        margin: 0 0 8px;
+        color: #eef4ff;
+        font-size: 0.92rem;
+      }
+      #dashboardTab .weekly-branches table {
+        color: #d8e4ff;
+      }
+      #dashboardTab .weekly-branches th,
+      #dashboardTab .weekly-branches td {
+        border-color: #35509d;
+      }
+      #dashboardTab .weekly-branches th {
+        color: #aab6de;
+      }
+      #dashboardTab .dashboard-metrics {
+        gap: 14px;
+      }
+      #dashboardTab .dashboard-metrics .metric-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #3a57aa;
+        background: linear-gradient(160deg, rgba(21, 36, 92, 0.96), rgba(14, 26, 71, 0.97));
+        box-shadow:
+          0 10px 24px rgba(4, 10, 33, 0.36),
+          0 0 0 1px rgba(127, 91, 255, 0.12) inset;
+        transition:
+          transform 0.18s ease,
+          border-color 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+      #dashboardTab .dashboard-metrics .metric-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(255, 79, 200, 0.9), rgba(127, 91, 255, 0.9), rgba(0, 200, 255, 0.9));
+        opacity: 0.75;
+      }
+      #dashboardTab .dashboard-metrics .metric-card::after {
+        content: "";
+        position: absolute;
+        right: -40px;
+        top: -40px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 200, 255, 0.2) 0%, rgba(0, 200, 255, 0) 72%);
+        pointer-events: none;
+      }
+      #dashboardTab .dashboard-metrics .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: #4f74cf;
+        box-shadow:
+          0 16px 30px rgba(4, 10, 33, 0.5),
+          0 0 0 1px rgba(0, 200, 255, 0.22) inset;
+      }
+      #dashboardTab .dashboard-metrics .metric-card:focus-visible {
+        outline: 2px solid #00c8ff;
+        outline-offset: 2px;
+      }
+      #dashboardTab .dashboard-metrics .metric-card .label {
+        color: #b9c7eb;
+      }
+      #dashboardTab .dashboard-metrics .metric-card .value {
+        color: #eef4ff;
+      }
+      #dashboardTab .dashboard-metrics .metric-card .value.ok {
+        color: #39d98a;
+      }
+      #dashboardTab .dashboard-metrics .metric-card .value.danger {
+        color: #ff6d88;
+      }
+      #dashboardTab .chart-wrap,
+      #productivityTab .chart-wrap {
+        position: relative;
+        border: 1px solid #3652a2;
+        border-radius: 14px;
+        padding: 10px 12px 6px;
+        background: linear-gradient(155deg, rgba(18, 31, 82, 0.96), rgba(12, 22, 63, 0.97));
+        box-shadow:
+          0 10px 26px rgba(4, 9, 32, 0.38),
+          0 0 0 1px rgba(127, 91, 255, 0.12) inset;
+        overflow: hidden;
+      }
+      #dashboardTab .chart-wrap::before,
+      #productivityTab .chart-wrap::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(255, 79, 200, 0.9), rgba(127, 91, 255, 0.88), rgba(0, 200, 255, 0.9));
+      }
+      #dashboardTab .chart-wrap::after,
+      #productivityTab .chart-wrap::after {
+        content: "";
+        position: absolute;
+        right: -52px;
+        top: -46px;
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 200, 255, 0.22) 0%, rgba(0, 200, 255, 0) 72%);
+        pointer-events: none;
+      }
+      #dashboardTab .chart-wrap canvas,
+      #productivityTab .chart-wrap canvas {
+        position: relative;
+        z-index: 1;
+      }
+      /* VIP Telecom premium high-tech theme */
+      :root {
+        --bg-1: #0a0f1c;
+        --bg-2: #0f2027;
+        --surface: rgba(6, 18, 22, 0.92);
+        --surface-solid: #071319;
+        --surface-alt: #001a14;
+        --text: #ffffff;
+        --muted: #b0bec5;
+        --primary: #39ff14;
+        --primary-strong: #00c853;
+        --danger: #ff6d88;
+        --ok: #39ff14;
+        --warn: #ffd166;
+        --info: #78f5c5;
+        --border: rgba(57, 255, 20, 0.24);
+      }
+      body {
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(57, 255, 20, 0.22) 0, transparent 30%),
+          radial-gradient(circle at 86% 10%, rgba(0, 200, 83, 0.18) 0, transparent 34%),
+          radial-gradient(circle at 50% 108%, rgba(0, 26, 20, 0.62) 0, transparent 46%),
+          linear-gradient(145deg, #0a0f1c 0%, #0f2027 58%, #001a14 100%);
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: -1;
+        background:
+          radial-gradient(circle at center, transparent 0, rgba(0, 0, 0, 0.26) 78%),
+          linear-gradient(120deg, rgba(57, 255, 20, 0.05), transparent 34%, rgba(0, 200, 83, 0.04));
+      }
+      .header-topbar {
+        background: linear-gradient(180deg, rgba(10, 15, 28, 0.98), rgba(0, 26, 20, 0.94));
+        border-top-color: rgba(57, 255, 20, 0.28);
+        border-bottom-color: rgba(57, 255, 20, 0.32);
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42), 0 0 28px rgba(57, 255, 20, 0.08);
+      }
+      .brand-logo {
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 12px rgba(57, 255, 20, 0.18));
+      }
+      .brand-wordmark {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        line-height: 1;
+      }
+      .brand-wordmark-main {
+        color: #ffffff;
+        font-size: clamp(2.2rem, 4.4vw, 4.25rem);
+        font-weight: 700;
+        letter-spacing: 0;
+        text-shadow: 0 0 18px rgba(57, 255, 20, 0.28);
+      }
+      .brand-wordmark-accent {
+        color: #39ff14;
+      }
+      .brand-wordmark-sub {
+        color: #b0bec5;
+        font-size: clamp(0.72rem, 1.1vw, 1rem);
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .header-topbar .tab-btn,
+      .header-subtitle,
+      .meta,
+      .filter-hint,
+      .field label,
+      .settings-feedback,
+      .board-summary-note {
+        color: var(--muted);
+      }
+      .header-topbar .tab-btn:hover:not(.active),
+      .header-topbar .tab-btn.active {
+        color: #ffffff;
+        text-shadow: 0 0 14px rgba(57, 255, 20, 0.32);
+      }
+      .tabs {
+        background: linear-gradient(150deg, rgba(10, 15, 28, 0.88), rgba(0, 26, 20, 0.8));
+        border-color: rgba(57, 255, 20, 0.24);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
+      }
+      .tab-btn:hover:not(.active) {
+        background: rgba(57, 255, 20, 0.1);
+      }
+      .tab-btn.active,
+      button,
+      #installationsTab .installations-subtab-btn.active {
+        background: linear-gradient(125deg, #39ff14 0%, #00c853 100%);
+        color: #071319;
+        box-shadow: 0 0 18px rgba(57, 255, 20, 0.24), 0 10px 24px rgba(0, 0, 0, 0.36);
+      }
+      .btn-ghost {
+        background: linear-gradient(130deg, rgba(15, 32, 39, 0.98), rgba(0, 26, 20, 0.95));
+        color: #ffffff;
+        border: 1px solid rgba(57, 255, 20, 0.26);
+      }
+      .subject-filter-remove,
+      .board-technician-remove,
+      .board-status-remove,
+      .board-delete-list {
+        background: linear-gradient(130deg, #7a1c3a, #431323);
+        color: #ffffff;
+      }
+      .panel,
+      .card,
+      .panel-soft,
+      #dashboardTab .dashboard-filters-panel,
+      #dashboardTab .weekly-overview-panel,
+      #installationsTab .installations-panel,
+      #dashboardTab .dashboard-metrics .metric-card,
+      #dashboardTab .chart-wrap,
+      #productivityTab .chart-wrap,
+      #installationsTab .weekly-summary-card,
+      #installationsTab .weekly-daily-card,
+      #installationsTab .weekly-shift-card,
+      #installationsTab .installations-tech-card,
+      #installationsTab .installations-top-installer,
+      #installationsTab .subject-median-bars,
+      .details-item,
+      .delay-report-tech,
+      .modal-panel {
+        background:
+          linear-gradient(155deg, rgba(15, 32, 39, 0.96), rgba(0, 26, 20, 0.92)),
+          linear-gradient(120deg, rgba(57, 255, 20, 0.06), rgba(0, 200, 83, 0.03));
+        border-color: rgba(57, 255, 20, 0.24);
+        box-shadow:
+          0 16px 34px rgba(0, 0, 0, 0.36),
+          0 0 0 1px rgba(57, 255, 20, 0.06) inset,
+          0 0 24px rgba(57, 255, 20, 0.06);
+      }
+      #dashboardTab .dashboard-filters-panel::before,
+      #dashboardTab .weekly-overview-panel::before,
+      #installationsTab .installations-panel::before,
+      #dashboardTab .dashboard-metrics .metric-card::before,
+      #dashboardTab .chart-wrap::before,
+      #productivityTab .chart-wrap::before {
+        background: linear-gradient(90deg, rgba(57, 255, 20, 0.96), rgba(0, 200, 83, 0.88));
+      }
+      #dashboardTab .dashboard-filters-panel::after,
+      #dashboardTab .dashboard-metrics .metric-card::after,
+      #dashboardTab .chart-wrap::after,
+      #productivityTab .chart-wrap::after {
+        background: radial-gradient(circle, rgba(57, 255, 20, 0.22) 0%, rgba(57, 255, 20, 0) 72%);
+      }
+      input,
+      select,
+      textarea,
+      .table-shell,
+      .board-table .journal-meta-item,
+      .board-comment-pill,
+      #installationsTab .installations-saved-list,
+      #installationsTab .collaborator-list {
+        background: rgba(10, 15, 28, 0.78);
+        border-color: rgba(57, 255, 20, 0.26);
+        color: #ffffff;
+      }
+      input::placeholder,
+      textarea::placeholder,
+      #dashboardTab .weekly-date-picker span,
+      #installationsTab .installations-filter-field label,
+      #installationsTab .installations-top-installer .label,
+      #installationsTab .installations-empty,
+      #dashboardTab .weekly-daily-empty {
+        color: #8fa2aa;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: #39ff14;
+        box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.24), 0 0 18px rgba(57, 255, 20, 0.16);
+      }
+      .modern-table th,
+      .modern-table td,
+      #dashboardTab .weekly-branches th,
+      #dashboardTab .weekly-branches td,
+      #installationsTab .installations-ranking-table th,
+      #installationsTab .installations-ranking-table td {
+        border-bottom-color: rgba(57, 255, 20, 0.16);
+      }
+      .modern-table thead th {
+        background: linear-gradient(180deg, rgba(15, 32, 39, 0.98), rgba(0, 26, 20, 0.94));
+        color: #d9fbe0;
+      }
+      .modern-table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .modern-table tbody tr:hover,
+      #installationsTab .collaborator-option:hover,
+      #installationsTab .installations-ranking-table tbody tr.is-top {
+        background: rgba(57, 255, 20, 0.09);
+      }
+      .card .label,
+      #dashboardTab .dashboard-metrics .metric-card .label,
+      #dashboardTab .weekly-summary-label,
+      #dashboardTab .weekly-summary-meta,
+      #dashboardTab .weekly-overview-range,
+      #dashboardTab .weekly-scope,
+      #dashboardTab .weekly-daily-label,
+      #dashboardTab .weekly-shift-label,
+      #installationsTab .weekly-summary-label,
+      #installationsTab .weekly-summary-meta,
+      #installationsTab .weekly-daily-label,
+      #installationsTab .installations-collaborator-summary,
+      #installationsTab .installations-subtab-btn,
+      #installationsTab .installations-ranking-table th,
+      #installationsTab .subject-median-value span,
+      #cardOrdersModalOverlay .relato-snippet,
+      #productivityTab .relato-snippet,
+      #boardDelayReportModalOverlay .relato-snippet {
+        color: #b0bec5;
+      }
+      .card .value,
+      #dashboardTab .dashboard-metrics .metric-card .value,
+      #dashboardTab .weekly-summary-value,
+      #dashboardTab .weekly-daily-value,
+      #dashboardTab .weekly-daily-card .value,
+      #dashboardTab .weekly-shift-count,
+      #installationsTab .weekly-summary-value,
+      #installationsTab .weekly-daily-value,
+      #installationsTab .installations-tech-head,
+      #installationsTab .installations-top-installer .name,
+      #installationsTab .installations-header h2,
+      #installationsTab .installations-ranking-header h3,
+      #installationsTab .subject-median-value,
+      #installationsTab .installations-ranking-table td,
+      #dashboardTab .weekly-overview-header h2,
+      #dashboardTab .weekly-daily-section h3,
+      #dashboardTab .weekly-shift-section h3,
+      #dashboardTab .weekly-branches h3 {
+        color: #ffffff;
+      }
+      .value.ok,
+      .chip-ok,
+      #dashboardTab .dashboard-metrics .metric-card .value.ok,
+      #dashboardTab .weekly-shift-card.is-morning .weekly-shift-percent,
+      #installationsTab .installations-rank,
+      #installationsTab .installations-tech-head span,
+      #installationsTab .productivity-rank-badge {
+        color: #39ff14;
+      }
+      .value.danger,
+      #dashboardTab .dashboard-metrics .metric-card .value.danger,
+      .chip-danger {
+        color: #ff8aa0;
+      }
+      #dashboardTab .weekly-daily-track,
+      #dashboardTab .weekly-daily-section,
+      #dashboardTab .weekly-shift-section,
+      #installationsTab .weekly-daily-track,
+      #installationsTab .weekly-daily-section,
+      #installationsTab .installations-subtabs {
+        border-color: rgba(57, 255, 20, 0.2);
+      }
+      #dashboardTab .weekly-daily-fill,
+      #dashboardTab .weekly-shift-fill,
+      #dashboardTab .weekly-shift-card.is-morning .weekly-shift-fill,
+      #installationsTab .weekly-daily-fill,
+      #installationsTab .installations-tech-fill {
+        background: linear-gradient(180deg, rgba(57, 255, 20, 0.95), rgba(0, 200, 83, 0.62));
+        box-shadow: 0 0 18px rgba(57, 255, 20, 0.2);
+      }
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-value,
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-label,
+      #dashboardTab .weekly-shift-card.is-night .weekly-shift-percent,
+      #installationsTab tr.is-top .productivity-rank-badge {
+        color: #7cff6b;
+      }
+      #dashboardTab .weekly-daily-bar.is-peak .weekly-daily-fill,
+      #dashboardTab .weekly-shift-card.is-night .weekly-shift-fill {
+        background: linear-gradient(180deg, rgba(124, 255, 107, 0.98), rgba(0, 200, 83, 0.72));
+        box-shadow: 0 0 22px rgba(57, 255, 20, 0.3);
+      }
+      #dashboardTab .dashboard-metrics .metric-card:hover {
+        border-color: rgba(57, 255, 20, 0.58);
+        box-shadow:
+          0 18px 34px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(57, 255, 20, 0.2) inset,
+          0 0 28px rgba(57, 255, 20, 0.16);
+      }
+      #dashboardTab .dashboard-metrics .metric-card:focus-visible {
+        outline: 2px solid #39ff14;
+      }
+      .modal-overlay {
+        background: rgba(0, 6, 8, 0.76);
+      }
+      #dashboardTab .weekly-summary-card,
+      #dashboardTab .weekly-daily-card,
+      #dashboardTab .weekly-shift-card {
+        border-color: rgba(57, 255, 20, 0.34);
+        background:
+          linear-gradient(155deg, rgba(15, 32, 39, 0.98), rgba(0, 26, 20, 0.94)),
+          linear-gradient(120deg, rgba(57, 255, 20, 0.08), rgba(0, 200, 83, 0.04));
+        box-shadow:
+          0 14px 30px rgba(0, 0, 0, 0.38),
+          0 0 0 1px rgba(57, 255, 20, 0.08) inset,
+          0 0 22px rgba(57, 255, 20, 0.08);
+      }
+      #dashboardTab .weekly-summary-card.is-highlight {
+        border-color: rgba(57, 255, 20, 0.72);
+        box-shadow:
+          0 14px 30px rgba(0, 0, 0, 0.4),
+          0 0 0 1px rgba(57, 255, 20, 0.18) inset,
+          0 0 26px rgba(57, 255, 20, 0.18);
+      }
+      #dashboardTab .weekly-date-picker input {
+        background: rgba(10, 15, 28, 0.86);
+        border-color: rgba(57, 255, 20, 0.34);
+        color: #ffffff;
+        box-shadow: 0 0 12px rgba(57, 255, 20, 0.08);
+      }
+      #dashboardTab .weekly-shift-percent,
+      #dashboardTab .weekly-summary-card.is-highlight .weekly-summary-value {
+        color: #39ff14;
+        text-shadow: 0 0 14px rgba(57, 255, 20, 0.24);
+      }
+      @media print {
+        body.print-delay-report * {
+          visibility: visible !important;
+        }
+        body.print-delay-report > *:not(main) {
+          display: none !important;
+        }
+        body.print-delay-report main {
+          display: block !important;
+        }
+        body.print-delay-report main > *:not(#delayReportPrintHost) {
+          display: none !important;
+        }
+        body.print-delay-report #delayReportPrintHost {
+          position: static !important;
+          inset: auto !important;
+          overflow: visible !important;
+          display: block !important;
+          width: 100% !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+        }
+        body.print-delay-report #delayReportPrintHost .print-report {
+          color: #20273a;
+          padding: 6px 8px;
+          font-size: 10px;
+          line-height: 1.24;
+        }
+        body.print-delay-report #delayReportPrintHost h1 {
+          color: #2f3f63;
+        }
+        body.print-delay-report #delayReportPrintHost .meta {
+          color: #5c6986;
+        }
+        body.print-delay-report #delayReportPrintHost .summary {
+          color: #4f5d7a;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-block {
+          border-color: #d8e0ef;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-block h3 {
+          background: #f1f4fb;
+          color: #405075;
+        }
+        body.print-delay-report #delayReportPrintHost .tech-meta {
+          color: #5e6c89;
+        }
+        body.print-delay-report #delayReportPrintHost table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+        }
+        body.print-delay-report #delayReportPrintHost thead {
+          display: table-header-group;
+        }
+        body.print-delay-report #delayReportPrintHost tbody {
+          display: table-row-group;
+        }
+        body.print-delay-report #delayReportPrintHost th,
+        body.print-delay-report #delayReportPrintHost td {
+          border-color: #e3e8f2;
+          padding: 4px 6px;
+          text-align: left;
+          vertical-align: top;
+          word-break: normal;
+          overflow-wrap: anywhere;
+          hyphens: auto;
+          line-height: 1.28;
+        }
+        body.print-delay-report #delayReportPrintHost th {
+          background: #f6f8fd;
+          color: #4a5978;
+          font-size: 9.4px;
+          white-space: nowrap;
+        }
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(1),
+        body.print-delay-report #delayReportPrintHost td:nth-child(1) {
+          width: 5%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(2),
+        body.print-delay-report #delayReportPrintHost td:nth-child(2) {
+          width: 8%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(3),
+        body.print-delay-report #delayReportPrintHost td:nth-child(3) {
+          width: 20%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(4),
+        body.print-delay-report #delayReportPrintHost td:nth-child(4) {
+          width: 14%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(5),
+        body.print-delay-report #delayReportPrintHost td:nth-child(5) {
+          width: 6%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(6),
+        body.print-delay-report #delayReportPrintHost td:nth-child(6),
+        body.print-delay-report #delayReportPrintHost th:nth-child(7),
+        body.print-delay-report #delayReportPrintHost td:nth-child(7),
+        body.print-delay-report #delayReportPrintHost th:nth-child(8),
+        body.print-delay-report #delayReportPrintHost td:nth-child(8),
+        body.print-delay-report #delayReportPrintHost th:nth-child(9),
+        body.print-delay-report #delayReportPrintHost td:nth-child(9) {
+          width: 6%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(10),
+        body.print-delay-report #delayReportPrintHost td:nth-child(10) {
+          width: 7%;
+        }
+        body.print-delay-report #delayReportPrintHost th:nth-child(11),
+        body.print-delay-report #delayReportPrintHost td:nth-child(11) {
+          width: 16%;
+        }
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(1),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(2),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(5),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(6),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(7),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(8),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(9),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(10) {
+          white-space: nowrap;
+        }
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(3),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(4),
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row td:nth-child(11) {
+          white-space: normal;
+        }
+        body.print-delay-report #delayReportPrintHost tbody tr.print-main-row:nth-child(even) td {
+          background: #fbfcff;
+        }
+        body.print-delay-report #delayReportPrintHost .print-comment-cell {
+          color: #243755;
+          white-space: pre-wrap;
+          word-break: normal;
+          overflow-wrap: break-word;
+          line-height: 1.35;
+        }
+      }
+      @media (max-width: 960px) {
+        #dashboardTab .weekly-summary-grid {
+          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+        #dashboardTab .weekly-daily-cards {
+          grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+        #dashboardTab .weekly-shift-cards {
+          grid-template-columns: 1fr;
+        }
+        #installationsTab .installations-grid {
+          grid-template-columns: 1fr;
+        }
+        #installationsTab .installations-actions {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        #installationsTab .installations-filter-field.is-wide {
+          grid-column: 1 / -1;
+        }
+        #installationsTab .installations-saved-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        #installationsTab .installations-saved-list > button {
+          grid-column: span 1;
+        }
+        .header-topbar {
+          grid-template-columns: minmax(280px, 340px) 1fr;
+          column-gap: 18px;
+          margin: 0 -10px 10px;
+          padding: 10px 18px;
+          min-height: 94px;
+        }
+        .header-topbar .tabs {
+          gap: 22px;
+          flex-wrap: wrap;
+        }
+        .header-topbar .tab-btn {
+          font-size: 1rem;
+        }
+        .brand-logo {
+          width: min(100%, 320px);
+          max-height: 98px;
+        }
+        .header-subtitle {
+          font-size: 0.9rem;
+          padding-left: 4px;
+          margin-bottom: 10px;
+        }
+      }
+      @media (max-width: 520px) {
+        #dashboardTab .weekly-overview-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        #dashboardTab .weekly-overview-range {
+          white-space: normal;
+        }
+        #dashboardTab .weekly-scope {
+          white-space: normal;
+        }
+        #dashboardTab .weekly-date-picker {
+          width: 100%;
+          flex-wrap: wrap;
+          margin-left: 0;
+        }
+        #dashboardTab .weekly-date-picker input {
+          width: calc(50% - 16px);
+          min-width: 116px;
+        }
+        #dashboardTab .weekly-summary-grid {
+          grid-template-columns: 1fr;
+        }
+        #dashboardTab .weekly-daily-bars {
+          grid-template-columns: repeat(2, minmax(92px, 1fr));
+        }
+        #dashboardTab .weekly-daily-cards {
+          grid-template-columns: 1fr;
+        }
+        #dashboardTab .weekly-shift-cards {
+          grid-template-columns: 1fr;
+        }
+        #installationsTab .installations-header {
+          flex-direction: column;
+        }
+        #installationsTab .installations-actions,
+        #installationsTab .installations-saved-list {
+          grid-template-columns: 1fr;
+        }
+        #installationsTab .installations-saved-list > button {
+          grid-column: 1;
+        }
+        #installationsTab .installations-collaborator-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        #installationsTab .installations-collaborator-summary {
+          text-align: left;
+          white-space: normal;
+        }
+        #installationsTab .installations-ranking-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        #installationsTab .installations-ranking-header span {
+          max-width: none;
+          text-align: left;
+          white-space: normal;
+        }
+        #installationsTab .installations-subtab-nav {
+          display: grid;
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+      #installationsTab .subject-median-row {
+        grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        #installationsTab .subject-median-name {
+          text-align: left;
+          white-space: normal;
+        }
+        #installationsTab .subject-median-side-values {
+          grid-template-columns: repeat(2, auto);
+          justify-content: flex-start;
+        }
+        #installationsTab .installations-summary {
+          grid-template-columns: 1fr;
+        }
+        .header-topbar {
+          display: flex;
+          margin: 0 0 10px;
+          padding: 10px 10px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .header-topbar .tabs {
+          width: 100%;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          gap: 16px;
+        }
+        .header-topbar .tab-btn {
+          flex: 0 0 auto;
+          font-size: 0.92rem;
+        }
+        .brand-logo {
+          width: min(330px, 92vw);
+          max-height: 104px;
+        }
+        .header-subtitle {
+          font-size: 0.86rem;
+          padding-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section class="topbar header-topbar">
+        <div class="title brand-title">
+          <div class="brand-logo-shell brand-wordmark" aria-label="VIP Telecom">
+            <span class="brand-wordmark-main"><span class="brand-wordmark-accent">VIP</span> Telecom</span>
+            <span class="brand-wordmark-sub">Premium Telecom Dashboard</span>
+          </div>
+        </div>
+        <div class="tabs">
+          <button id="tabDashboardBtn" class="tab-btn active" type="button">Dashboard</button>
+          <button id="tabProductivityBtn" class="tab-btn" type="button">Produtividade</button>
+          <button id="tabInstallationsBtn" class="tab-btn" type="button">Instalacoes</button>
+          <button id="tabSettingsBtn" class="tab-btn" type="button">Configuracoes</button>
+        </div>
+      </section>
+      <p class="header-subtitle">Volume por hora, assuntos, produtividade, instalacoes e SLA.</p>
+
+      <section id="dashboardTab" class="tab-content active">
+        <section class="topbar" style="margin-bottom: 8px">
+          <div class="controls">
+            <input id="dateInput" type="date" />
+            <button id="syncBtn">Sincronizar agora</button>
+            <button id="syncFullBtn" class="btn-ghost">Sync completa</button>
+          </div>
+        </section>
+        <section class="panel dashboard-filters-panel" style="margin-bottom: 10px">
+          <h2>Filtros</h2>
+          <div class="controls dashboard-filter-controls">
+            <input id="startDateInput" type="date" />
+            <input id="endDateInput" type="date" />
+            <div class="subject-filter-box">
+              <select id="subjectFilter" hidden aria-hidden="true"></select>
+              <div id="subjectFilterRows" class="subject-filter-rows">
+                <div class="subject-filter-row">
+                  <select class="subject-filter-select">
+                    <option value="__all__">Selecione um tipo de OS</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="subject-filter-remove"
+                    title="Remover tipo de OS"
+                    disabled
+                    style="visibility: hidden"
+                  >
+                    -
+                  </button>
+                </div>
+              </div>
+              <button
+                id="subjectAddBtn"
+                type="button"
+                class="btn-ghost subject-filter-add"
+                title="Adicionar tipo de OS"
+              >
+                +
+              </button>
+            </div>
+            <select id="subjectGroupFilter">
+              <option value="__all__">Todos os grupos</option>
+            </select>
+            <button id="createSubjectGroupBtn" type="button" class="btn-ghost">
+              Criar grupo
+            </button>
+            <button id="deleteSubjectGroupBtn" type="button" class="btn-ghost" disabled>
+              Excluir grupo
+            </button>
+            <select id="branchFilter">
+              <option value="__all__">Todas as filiais</option>
+            </select>
+            <button id="applyFiltersBtn" type="button">Aplicar filtros</button>
+            <button id="clearFiltersBtn" type="button" class="btn-ghost">Limpar filtros</button>
+            <p class="filter-hint">
+              Grupo filtra um conjunto de assuntos. Assunto continua disponivel para refinamento.
+            </p>
+          </div>
+        </section>
+
+        <p class="meta" id="meta">Carregando...</p>
+
+        <section class="section panel weekly-overview-panel">
+          <div class="weekly-overview-header">
+            <h2>Visao geral da semana</h2>
+            <span class="weekly-overview-range" id="weeklyRangeValue">-</span>
+            <span class="weekly-scope" id="weeklyScopeValue">Unidades: todas</span>
+            <div class="weekly-date-picker" aria-label="Periodo da visao semanal">
+              <span>De</span>
+              <input id="weeklyStartDateInput" type="date" />
+              <span>ate</span>
+              <input id="weeklyEndDateInput" type="date" />
+            </div>
+          </div>
+          <div class="weekly-summary-grid">
+            <article class="weekly-summary-card">
+              <div class="weekly-summary-value" id="weeklyFinishedValue">0</div>
+              <div class="weekly-summary-label">OS finalizadas</div>
+              <div class="weekly-summary-meta">Total da semana</div>
+            </article>
+            <article class="weekly-summary-card">
+              <div class="weekly-summary-value" id="weeklyInstallationsValue">0</div>
+              <div class="weekly-summary-label">Instalacoes</div>
+              <div class="weekly-summary-meta" id="weeklyInstallationsPercent">0% do total</div>
+            </article>
+            <article class="weekly-summary-card is-highlight">
+              <div class="weekly-summary-value" id="weeklyProductiveDayValue">-</div>
+              <div class="weekly-summary-label">Dia mais produtivo</div>
+              <div class="weekly-summary-meta" id="weeklyProductiveDayMeta">Sem OS finalizadas</div>
+            </article>
+            <article class="weekly-summary-card">
+              <div class="weekly-summary-value" id="weeklyTechniciansValue">0</div>
+              <div class="weekly-summary-label">Tecnicos ativos</div>
+              <div class="weekly-summary-meta" id="weeklyTechniciansMeta">0 OS com tecnico</div>
+            </article>
+          </div>
+          <div class="weekly-daily-section">
+            <h3>OS finalizadas por dia</h3>
+            <div class="weekly-daily-bars" id="weeklyDailyBars"></div>
+            <div class="weekly-daily-cards">
+              <article class="weekly-daily-card">
+                <div class="value" id="weeklyDailyTotalValue">0</div>
+                <div class="label">Total de OS</div>
+              </article>
+              <article class="weekly-daily-card">
+                <div class="value" id="weeklyDailyPeakValue">0</div>
+                <div class="label" id="weeklyDailyPeakMeta">Pico</div>
+              </article>
+              <article class="weekly-daily-card">
+                <div class="value" id="weeklyDailyPeakPercentValue">0%</div>
+                <div class="label">Da semana em 1 dia</div>
+              </article>
+              <article class="weekly-daily-card">
+                <div class="value" id="weeklyDailySundayValue">0</div>
+                <div class="label">OS no domingo</div>
+              </article>
+            </div>
+          </div>
+          <div class="weekly-shift-section">
+            <h3>Produtividade por turno</h3>
+            <div class="weekly-shift-cards" id="weeklyShiftCards"></div>
+          </div>
+          <div class="weekly-branches">
+            <h3 id="weeklyBranchesTitle">Resultados por unidade</h3>
+            <div class="table-shell">
+              <div class="table-scroll">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Unidade</th>
+                      <th>OS finalizadas</th>
+                      <th>Instalacoes</th>
+                      <th>% instalacoes</th>
+                      <th>Tecnicos ativos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="weeklyBranchesTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid-cards dashboard-metrics">
+          <article
+            class="card metric-card"
+            data-metric="completed_today"
+            data-label="OS efetuadas no dia"
+            tabindex="0"
+          >
+            <div class="label">OS efetuadas no dia</div>
+            <div class="value" id="completedValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="active_orders"
+            data-label="OS ativas"
+            tabindex="0"
+          >
+            <div class="label">OS ativas</div>
+            <div class="value" id="activeValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="within_sla"
+            data-label="Dentro do SLA"
+            tabindex="0"
+          >
+            <div class="label">Dentro do SLA</div>
+            <div class="value ok" id="slaWithinValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="overdue"
+            data-label="Fora do SLA"
+            tabindex="0"
+          >
+            <div class="label">Fora do SLA</div>
+            <div class="value danger" id="slaOverdueValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="technicians_in_execution"
+            data-label="Tecnicos em execucao"
+            tabindex="0"
+          >
+            <div class="label">Tecnicos em execucao</div>
+            <div class="value" id="techniciansExecutingValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="orders_started"
+            data-label="OS iniciadas pelos tecnicos"
+            tabindex="0"
+          >
+            <div class="label">OS iniciadas pelos tecnicos</div>
+            <div class="value" id="technicianStartedOrdersValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="rescheduled_today"
+            data-label="OS reagendadas no dia"
+            tabindex="0"
+          >
+            <div class="label">OS reagendadas no dia</div>
+            <div class="value" id="rescheduledTodayValue">0</div>
+          </article>
+          <article
+            class="card metric-card"
+            data-metric="avg_execution"
+            data-label="Tempo medio de execucao"
+            tabindex="0"
+          >
+            <div class="label">Tempo medio de execucao</div>
+            <div class="value" id="avgExecutionMinutesValue">-</div>
+          </article>
+        </section>
+
+        <section class="section panel">
+          <h2>Ordens efetuadas hora a hora</h2>
+          <div class="chart-wrap chart-wrap-lg">
+            <canvas id="hourlyChart" height="120"></canvas>
+          </div>
+        </section>
+
+        <section class="section double">
+          <article class="panel">
+            <h2>Ordens abertas por assunto</h2>
+            <div class="chart-wrap">
+              <canvas id="subjectsChart" height="220"></canvas>
+            </div>
+            <div class="table-shell">
+              <div class="table-scroll">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Assunto</th>
+                      <th>Quantidade</th>
+                    </tr>
+                  </thead>
+                  <tbody id="subjectsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+          <article class="panel">
+            <h2>Movimentacao por tecnico (SLA e tempos)</h2>
+            <div class="chart-wrap">
+              <canvas id="techPerformanceChart" height="220"></canvas>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section id="productivityTab" class="tab-content">
+        <article class="panel">
+          <h2>Produtividade por Tecnico</h2>
+          <div class="controls" style="flex-wrap: wrap; margin-bottom: 10px">
+            <input id="prodStartDateInput" type="date" />
+            <input id="prodEndDateInput" type="date" />
+            <div class="subject-filter-box">
+              <select id="prodSubjectFilter" hidden aria-hidden="true"></select>
+              <div id="prodSubjectFilterRows" class="subject-filter-rows">
+                <div class="subject-filter-row">
+                  <select class="subject-filter-select">
+                    <option value="__all__">Selecione um tipo de OS</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="subject-filter-remove"
+                    title="Remover tipo de OS"
+                    disabled
+                    style="visibility: hidden"
+                  >
+                    -
+                  </button>
+                </div>
+              </div>
+              <div class="subject-filter-row">
+                <button
+                  id="prodSubjectAddBtn"
+                  type="button"
+                  class="btn-ghost subject-filter-add"
+                  title="Adicionar tipo de OS"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <select id="prodSubjectGroupFilter">
+              <option value="__all__">Todos os grupos</option>
+            </select>
+            <select id="prodBranchFilter">
+              <option value="__all__">Todas as filiais</option>
+            </select>
+            <select id="prodTechnicianFilter">
+              <option value="__all__">Todos os tecnicos</option>
+            </select>
+            <select id="prodStatusFilter">
+              <option value="__all__">Todos os status</option>
+            </select>
+            <button id="prodApplyFiltersBtn" type="button">Aplicar filtros</button>
+            <button id="prodClearFiltersBtn" type="button" class="btn-ghost">Limpar filtros</button>
+            <p class="filter-hint">
+              Tipos de OS: use o botao + para adicionar outro tipo ao filtro.
+            </p>
+          </div>
+
+          <p class="meta" id="productivityMeta">Carregando produtividade...</p>
+
+          <section class="grid-cards">
+            <article class="card">
+              <div class="label">Tecnicos no periodo</div>
+              <div class="value" id="prodTechniciansTotalValue">0</div>
+            </article>
+            <article class="card">
+              <div class="label">OS atribuidas</div>
+              <div class="value" id="prodOrdersHandledValue">0</div>
+            </article>
+            <article class="card">
+              <div class="label">OS iniciadas</div>
+              <div class="value" id="prodOrdersStartedValue">0</div>
+            </article>
+            <article class="card">
+              <div class="label">OS finalizadas</div>
+              <div class="value ok" id="prodOrdersFinishedValue">0</div>
+            </article>
+            <article class="card">
+              <div class="label">SLA medio</div>
+              <div class="value" id="prodAvgSlaValue">-</div>
+            </article>
+            <article class="card">
+              <div class="label">Tempo medio execucao</div>
+              <div class="value" id="prodAvgExecutionValue">-</div>
+            </article>
+          </section>
+
+          <section class="section panel panel-soft">
+            <h2>Comparativo visual por tecnico</h2>
+            <div class="chart-wrap chart-wrap-lg">
+              <canvas id="productivityChart" height="130"></canvas>
+            </div>
+          </section>
+
+          <section class="section table-scroll">
+            <div class="table-shell">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Tecnico</th>
+                    <th>OS atribuidas</th>
+                    <th>Iniciadas</th>
+                    <th>Finalizadas</th>
+                    <th>Em execucao</th>
+                    <th>Taxa conclusao %</th>
+                    <th>SLA %</th>
+                    <th>Resp. (min)</th>
+                    <th>Exec. (min)</th>
+                    <th>Total (min)</th>
+                    <th>Fora SLA</th>
+                  </tr>
+                </thead>
+                <tbody id="productivityTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Detalhamento das OS do tecnico selecionado</h2>
+            <p class="meta" id="productivityOrdersMeta">
+              Selecione um tecnico para listar as OS detalhadas.
+            </p>
+            <div class="table-scroll">
+              <div class="table-shell">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>OS / Cliente</th>
+                      <th>Assunto</th>
+                      <th>Filial</th>
+                      <th>Abertura</th>
+                      <th>Deslocamento</th>
+                      <th>Execucao</th>
+                      <th>Finalizacao</th>
+                      <th>Status</th>
+                      <th>Relato/Finalizacao</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productivityOrdersTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </article>
+      </section>
+
+      <section id="installationsTab" class="tab-content">
+        <article class="panel installations-panel">
+          <div class="installations-header">
+            <div>
+              <h2>Instalacoes por data e ranking de tecnicos</h2>
+              <span id="installationsRangeValue">-</span>
+              <span>|</span>
+              <span id="installationsScopeValue">Unidades: todas</span>
+            </div>
+            <div class="installations-actions">
+              <div class="installations-saved-list">
+                <div class="installations-filter-field">
+                  <label for="installationsPresetSelect">Listas salvas</label>
+                  <select id="installationsPresetSelect">
+                    <option value="">Nenhuma lista salva</option>
+                  </select>
+                </div>
+                <div class="installations-filter-field">
+                  <label for="installationsPresetNameInput">Nome da lista</label>
+                  <input id="installationsPresetNameInput" placeholder="Ex: Uniao - instaladores" />
+                </div>
+                <button id="installationsSavePresetBtn" type="button" class="btn-ghost">Salvar lista</button>
+                <button id="installationsLoadPresetBtn" type="button" class="btn-ghost">Carregar</button>
+                <button id="installationsDeletePresetBtn" type="button" class="btn-ghost">Excluir</button>
+              </div>
+              <div class="installations-filter-field">
+                <label for="installationsStartDateInput">De</label>
+                <input id="installationsStartDateInput" type="date" />
+              </div>
+              <div class="installations-filter-field">
+                <label for="installationsEndDateInput">Ate</label>
+                <input id="installationsEndDateInput" type="date" />
+              </div>
+              <div class="installations-filter-field">
+                <label for="installationsBranchSelect">Unidade</label>
+                <select id="installationsBranchSelect"></select>
+              </div>
+              <div class="installations-filter-field">
+                <label for="installationsCitySelect">Cidade</label>
+                <select id="installationsCitySelect"></select>
+              </div>
+              <div id="installationsSubjectField" class="installations-filter-field is-subject">
+                <div class="installations-subject-head">
+                  <label>Tipos de OS</label>
+                  <span id="installationsSubjectSummary" class="installations-subject-summary">Todos os tipos</span>
+                </div>
+                <div class="subject-filter-box">
+                  <select id="installationsSubjectFilter" hidden aria-hidden="true"></select>
+                  <div id="installationsSubjectFilterRows" class="subject-filter-rows">
+                    <div class="subject-filter-row">
+                      <select class="subject-filter-select">
+                        <option value="__all__">Selecione um tipo de OS</option>
+                      </select>
+                      <button
+                        type="button"
+                        class="subject-filter-remove"
+                        title="Remover tipo de OS"
+                        disabled
+                        style="visibility: hidden"
+                      >
+                        -
+                      </button>
+                    </div>
+                  </div>
+                  <div class="subject-filter-row">
+                    <button
+                      id="installationsSubjectAddBtn"
+                      type="button"
+                      class="btn-ghost subject-filter-add"
+                      title="Adicionar tipo de OS"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <button id="installationsToggleSubjectsBtn" type="button" class="btn-ghost">
+                  Ocultar tipos de OS
+                </button>
+              </div>
+              <div class="installations-filter-field">
+                <label for="installationsSubjectGroupFilter">Grupo de OS</label>
+                <select id="installationsSubjectGroupFilter">
+                  <option value="__all__">Todos os grupos</option>
+                </select>
+              </div>
+              <div class="installations-filter-field is-wide">
+                <div class="installations-collaborator-head">
+                  <label for="installationsCollaboratorSearch">Colaboradores</label>
+                  <span id="installationsCollaboratorSummary" class="installations-collaborator-summary">Nenhum tecnico selecionado</span>
+                </div>
+                <button id="installationsToggleCollaboratorsBtn" type="button" class="btn-ghost">
+                  Mostrar lista de colaboradores
+                </button>
+                <div id="installationsCollaboratorPanel" class="collaborator-panel" hidden>
+                  <div class="collaborator-toolbar">
+                    <input id="installationsCollaboratorSearch" placeholder="Buscar tecnico" />
+                    <button id="installationsSelectAllBtn" type="button" class="btn-ghost">Todos</button>
+                    <button id="installationsClearCollaboratorsBtn" type="button" class="btn-ghost">Limpar</button>
+                  </div>
+                  <div id="installationsCollaboratorList" class="collaborator-list"></div>
+                </div>
+              </div>
+              <button id="installationsApplyDateBtn" type="button">Carregar instalacoes</button>
+            </div>
+          </div>
+          <div class="installations-grid">
+            <section>
+              <div class="installations-summary">
+                <article class="weekly-summary-card">
+                  <div class="weekly-summary-value" id="installationsTotalValue">0</div>
+                  <div class="weekly-summary-label">Instalacoes efetuadas</div>
+                  <div class="weekly-summary-meta">Data selecionada</div>
+                </article>
+                <article class="weekly-summary-card is-highlight">
+                  <div class="weekly-summary-value" id="installationsTopDayValue">-</div>
+                  <div class="weekly-summary-label">Tecnicos no ranking</div>
+                  <div class="weekly-summary-meta" id="installationsTopDayMeta">Sem instalacoes</div>
+                </article>
+              </div>
+              <div class="weekly-daily-section">
+                <h3>Instalacoes na data</h3>
+                <div class="weekly-daily-bars" id="installationsDailyBars"></div>
+              </div>
+            </section>
+            <section>
+              <h3 style="margin: 0 0 10px; color: #eef4ff; font-size: 0.92rem">Ranking de tecnicos</h3>
+              <div class="installations-tech-list" id="installationsTechnicianList"></div>
+              <div class="installations-top-installer">
+                <div class="label">Top instalador</div>
+                <div class="name" id="installationsTopInstallerName">-</div>
+                <p class="meta" id="installationsTopInstallerCount">0 instalacoes</p>
+                <p class="meta" id="installationsTopInstallerRate">0 inst./total</p>
+              </div>
+            </section>
+          </div>
+          <section class="installations-subtabs">
+            <div class="installations-subtab-nav" aria-label="Analises de instalacoes">
+              <button class="installations-subtab-btn active" type="button" data-installations-tab="ranking">
+                Produtividade por tecnico
+              </button>
+              <button class="installations-subtab-btn" type="button" data-installations-tab="median">
+                Tempo mediano por tipo de OS
+              </button>
+            </div>
+            <div class="installations-subtab-panel" data-installations-panel="ranking">
+              <section class="installations-productivity-ranking">
+                <div class="installations-ranking-header">
+                  <h3>Ranking de tecnicos - produtividade e tempo de execucao</h3>
+                  <span id="installationsProductivitySummary">Periodo: -</span>
+                </div>
+                <div class="table-shell">
+                  <div class="table-scroll">
+                    <table class="installations-ranking-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Tecnico</th>
+                          <th>Total OS</th>
+                          <th>Inst.</th>
+                          <th>Dias</th>
+                          <th>OS/dia</th>
+                          <th>T. medio (min)</th>
+                          <th>T. mediano (min)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="installationsProductivityTable">
+                        <tr><td colspan="8">Carregando ranking...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div class="installations-subtab-panel" data-installations-panel="median" hidden>
+              <section class="installations-productivity-ranking">
+                <div class="installations-ranking-header">
+                  <h3>Tempo mediano de execucao por tipo de OS</h3>
+                  <span id="installationsSubjectMedianSummary">Periodo: -</span>
+                </div>
+                <div id="installationsSubjectMedianBars" class="subject-median-bars">
+                  <div class="installations-empty">Carregando tempos por tipo de OS...</div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </article>
+      </section>
+
+      <section id="settingsTab" class="tab-content">
+        <article class="panel">
+          <h2>Configuracao de Integracao IXC</h2>
+          <p class="meta" style="margin-top: 0">
+            Essas configuracoes sao gravadas no arquivo <code>.env</code> e aplicadas automaticamente.
+          </p>
+          <form id="settingsForm" class="settings-grid">
+            <div class="field"><label for="IXC_BASE_URL">IXC_BASE_URL</label><input id="IXC_BASE_URL" /></div>
+            <div class="field"><label for="IXC_TOKEN">IXC_TOKEN</label><input id="IXC_TOKEN" type="password" autocomplete="off" /></div>
+
+            <div class="field"><label for="IXC_OS_TABLE">IXC_OS_TABLE</label><input id="IXC_OS_TABLE" /></div>
+            <div class="field"><label for="IXC_OS_ID_FIELD">IXC_OS_ID_FIELD</label><input id="IXC_OS_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_STATUS_FIELD">IXC_OS_STATUS_FIELD</label><input id="IXC_OS_STATUS_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_SUBJECT_ID_FIELD">IXC_OS_SUBJECT_ID_FIELD</label><input id="IXC_OS_SUBJECT_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_BRANCH_ID_FIELD">IXC_OS_BRANCH_ID_FIELD</label><input id="IXC_OS_BRANCH_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_BRANCH_NAME_FIELD">IXC_OS_BRANCH_NAME_FIELD</label><input id="IXC_OS_BRANCH_NAME_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_TECH_ID_FIELD">IXC_OS_TECH_ID_FIELD</label><input id="IXC_OS_TECH_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_OPENED_AT_FIELD">IXC_OS_OPENED_AT_FIELD</label><input id="IXC_OS_OPENED_AT_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_EXECUTION_AT_FIELD">IXC_OS_EXECUTION_AT_FIELD</label><input id="IXC_OS_EXECUTION_AT_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_CLOSED_AT_FIELD">IXC_OS_CLOSED_AT_FIELD</label><input id="IXC_OS_CLOSED_AT_FIELD" /></div>
+            <div class="field"><label for="IXC_OS_DUE_AT_FIELD">IXC_OS_DUE_AT_FIELD</label><input id="IXC_OS_DUE_AT_FIELD" /></div>
+
+            <div class="field"><label for="IXC_SUBJECT_TABLE">IXC_SUBJECT_TABLE</label><input id="IXC_SUBJECT_TABLE" /></div>
+            <div class="field"><label for="IXC_SUBJECT_ID_FIELD">IXC_SUBJECT_ID_FIELD</label><input id="IXC_SUBJECT_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_SUBJECT_NAME_FIELD">IXC_SUBJECT_NAME_FIELD</label><input id="IXC_SUBJECT_NAME_FIELD" /></div>
+
+            <div class="field"><label for="IXC_TECH_TABLE">IXC_TECH_TABLE</label><input id="IXC_TECH_TABLE" /></div>
+            <div class="field"><label for="IXC_TECH_ID_FIELD">IXC_TECH_ID_FIELD</label><input id="IXC_TECH_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_TECH_NAME_FIELD">IXC_TECH_NAME_FIELD</label><input id="IXC_TECH_NAME_FIELD" /></div>
+            <div class="field"><label for="IXC_CITY_TABLE">IXC_CITY_TABLE</label><input id="IXC_CITY_TABLE" /></div>
+            <div class="field"><label for="IXC_CITY_ID_FIELD">IXC_CITY_ID_FIELD</label><input id="IXC_CITY_ID_FIELD" /></div>
+            <div class="field"><label for="IXC_CITY_NAME_FIELD">IXC_CITY_NAME_FIELD</label><input id="IXC_CITY_NAME_FIELD" /></div>
+
+            <div class="field"><label for="IXC_STATUS_CLOSED">IXC_STATUS_CLOSED</label><input id="IXC_STATUS_CLOSED" placeholder="F,FINALIZADA,CONCLUIDA" /></div>
+            <div class="field"><label for="IXC_STATUS_EXECUTION">IXC_STATUS_EXECUTION</label><input id="IXC_STATUS_EXECUTION" placeholder="E,EM_EXECUCAO,EM_ANDAMENTO" /></div>
+
+            <div class="field"><label for="IXC_PAGE_SIZE">IXC_PAGE_SIZE</label><input id="IXC_PAGE_SIZE" type="number" min="1" /></div>
+            <div class="field"><label for="IXC_MAX_PAGES">IXC_MAX_PAGES</label><input id="IXC_MAX_PAGES" type="number" min="1" /></div>
+            <div class="field"><label for="IXC_FULL_SYNC_EVERY_N_RUNS">IXC_FULL_SYNC_EVERY_N_RUNS</label><input id="IXC_FULL_SYNC_EVERY_N_RUNS" type="number" min="1" /></div>
+            <div class="field"><label for="IXC_SYNC_INTERVAL_SECONDS">IXC_SYNC_INTERVAL_SECONDS</label><input id="IXC_SYNC_INTERVAL_SECONDS" type="number" min="5" /></div>
+            <div class="field"><label for="IXC_HTTP_TIMEOUT_SECONDS">IXC_HTTP_TIMEOUT_SECONDS</label><input id="IXC_HTTP_TIMEOUT_SECONDS" type="number" min="1" /></div>
+            <div class="field"><label for="APP_TIMEZONE">APP_TIMEZONE</label><input id="APP_TIMEZONE" /></div>
+            <div class="field"><label for="APP_DB_PATH">APP_DB_PATH</label><input id="APP_DB_PATH" /></div>
+            <div class="field"><label for="APP_DASHBOARD_REFRESH_SECONDS">APP_DASHBOARD_REFRESH_SECONDS</label><input id="APP_DASHBOARD_REFRESH_SECONDS" type="number" min="5" /></div>
+            <div class="field"><label for="APP_FILTER_OPTIONS_REFRESH_SECONDS">APP_FILTER_OPTIONS_REFRESH_SECONDS</label><input id="APP_FILTER_OPTIONS_REFRESH_SECONDS" type="number" min="15" /></div>
+            <div class="field" style="grid-column: 1 / -1">
+              <label for="APP_SUBJECT_GROUPS">APP_SUBJECT_GROUPS</label>
+              <input
+                id="APP_SUBJECT_GROUPS"
+                placeholder="Tecnico=suporte|instalacao;Financeiro=financeiro|boleto|cobranca"
+              />
+              <span class="field-hint">
+                Formato: grupo=termo1|termo2;outro_grupo=termo3|termo4. O filtro de grupo compara esses termos com os assuntos.
+              </span>
+            </div>
+
+            <div class="field field-check"><input id="IXC_INCREMENTAL_SYNC" type="checkbox" /><label for="IXC_INCREMENTAL_SYNC">IXC_INCREMENTAL_SYNC</label></div>
+            <div class="field field-check"><input id="IXC_SYNC_ON_STARTUP" type="checkbox" /><label for="IXC_SYNC_ON_STARTUP">IXC_SYNC_ON_STARTUP</label></div>
+            <div class="field field-check"><input id="IXC_AUTO_SYNC" type="checkbox" /><label for="IXC_AUTO_SYNC">IXC_AUTO_SYNC</label></div>
+            <div class="field field-check"><input id="IXC_VERIFY_SSL" type="checkbox" /><label for="IXC_VERIFY_SSL">IXC_VERIFY_SSL</label></div>
+          </form>
+          <div class="settings-actions">
+            <button id="saveSettingsBtn" type="button">Salvar configuracoes</button>
+            <button id="testConnectionBtn" type="button" class="btn-ghost">Testar conexao</button>
+            <button id="autoDiscoveryBtn" type="button" class="btn-ghost">Aplicar descoberta de campos</button>
+          </div>
+          <p class="settings-feedback" id="settingsFeedback">Carregando configuracoes...</p>
+        </article>
+      </section>
+
+      <div id="cardOrdersModalOverlay" class="modal-overlay" hidden>
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="cardOrdersModalTitle">
+          <div class="modal-header">
+            <h3 id="cardOrdersModalTitle">Detalhamento de OS</h3>
+            <button id="cardOrdersModalClose" class="btn-ghost modal-close" type="button">Fechar</button>
+          </div>
+          <div class="modal-body">
+            <p class="meta" id="cardOrdersModalMeta">Carregando...</p>
+            <div class="table-scroll">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>OS / Cliente</th>
+                    <th>Tecnico</th>
+                    <th>Assunto</th>
+                    <th>Filial</th>
+                    <th>Abertura (data/hora)</th>
+                    <th>Deslocamento</th>
+                    <th>Execucao</th>
+                    <th>Reagendamento</th>
+                    <th>Finalizacao</th>
+                    <th>SLA</th>
+                    <th>Relato/Finalizacao</th>
+                  </tr>
+                </thead>
+                <tbody id="cardOrdersModalTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      </div>
+    </main>
+
+    <script src="/static/dashboard.js?v=20260504-readable-productivity-ranking"></script>
+  </body>
+</html>
