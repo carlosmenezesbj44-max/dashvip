@@ -6,8 +6,9 @@ import logging
 import secrets
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -290,7 +291,7 @@ async def get_app_settings(_: None = Depends(_require_admin)) -> dict[str, Any]:
 
 @app.put("/api/settings")
 async def update_app_settings(
-    payload: dict[str, Any],
+    payload: dict[str, Any] = Body(...),
     _: None = Depends(_require_admin),
 ) -> dict[str, Any]:
     try:
