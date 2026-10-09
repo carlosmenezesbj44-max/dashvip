@@ -135,9 +135,16 @@ def _friendly_ixc_error(response: httpx.Response) -> str:
     body = (response.text or '').strip().lower()
 
     if status == 401:
+        challenge = (response.headers.get("www-authenticate") or "").lower()
+        if challenge.startswith("basic"):
+            return (
+                "O servidor recusou a autenticacao Basic (HTTP 401). Compare o ID/token "
+                "salvo neste painel com a credencial da aplicacao que conecta. "
+                "Esta resposta nao confirma bloqueio de IP."
+            )
         return (
-            'Erro de acesso no IXC. O servidor do painel precisa estar liberado no IXC. '
-            f'Libere o IP {SERVER_PUBLIC_IP} ou revise a credencial/token configurado.'
+            "O servico recusou a credencial configurada (HTTP 401). "
+            "Confira o ID do usuario e o token da API."
         )
 
     if 'ip' in body and ('liberad' in body or 'permit' in body):
