@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 import httpx
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -220,7 +220,7 @@ async def index() -> FileResponse:
 
 
 @app.get("/dashboard-legacy", include_in_schema=False)
-async def legacy_dashboard(tab: str | None = None) -> FileResponse | RedirectResponse:
+async def legacy_dashboard(tab: str | None = None) -> Response:
     if tab == "settings":
         return RedirectResponse(url="/settings", status_code=307)
     return FileResponse(
