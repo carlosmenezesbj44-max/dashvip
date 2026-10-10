@@ -227,6 +227,14 @@ async def legacy_dashboard() -> FileResponse:
     )
 
 
+@app.get("/settings", include_in_schema=False)
+async def settings_dashboard() -> FileResponse:
+    return FileResponse(
+        STATIC_DIR / "settings.html",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.get("/dashboard-react", include_in_schema=False)
 async def react_dashboard() -> FileResponse:
     index_file = REACT_DASHBOARD_DIR / "index.html"

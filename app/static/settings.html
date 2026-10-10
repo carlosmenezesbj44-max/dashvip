@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#031316">
+  <title>Configurações · VIP Telecom</title>
+  <link rel="stylesheet" href="/static/settings.css">
+  <script src="/static/settings.js" defer></script>
+</head>
+<body>
+  <main class="settings-app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="VIP Telecom, voltar ao painel">
+        <span class="brand-mark" aria-hidden="true">V</span>
+        <span><strong>VIP</strong><small>TELECOM</small></span>
+      </a>
+      <a class="back-link" href="/">← Voltar ao painel</a>
+    </header>
+    <section class="page-heading">
+      <div><p class="eyebrow">PAINEL DE CONTROLE</p><h1>Configurações</h1><p class="intro">Gerencie a conexão com o IXC e o comportamento do seu painel.</p></div>
+      <div class="connection-pill"><span class="pulse"></span><span id="connectionState">Verificando configuração</span></div>
+    </section>
+    <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+    <form id="settingsForm" autocomplete="off">
+      <section class="connection-card" aria-labelledby="connectionTitle">
+        <div class="connection-copy"><span class="section-index">01 / CONEXÃO</span><h2 id="connectionTitle">IXC • Webservice</h2><p>Endereço e credencial usados para consultar suas ordens de serviço.</p></div>
+        <div class="connection-fields">
+          <label class="field"><span>Endereço do webservice</span><input id="IXC_BASE_URL" name="IXC_BASE_URL" type="url" placeholder="https://provedor.ixcsoft.com.br/webservice/v1" required></label>
+          <label class="field"><span>Credencial do IXC</span><input id="IXC_TOKEN" name="IXC_TOKEN" type="password" placeholder="Credencial salva · digite para substituir" autocomplete="new-password"><small>Uma credencial existente fica protegida. Deixe em branco para mantê-la.</small></label>
+        </div>
+          <div class="connection-actions"><button id="testBtn" class="button secondary" type="button" disabled>Testar conexão <span aria-hidden="true">↗</span></button><span id="testResult" class="test-result"></span></div>
+      </section>
+      <div class="settings-grid">
+        <section class="settings-card orders-card"><div class="card-heading"><span class="section-index">02 / MAPEAMENTO</span><h2>Ordens de serviço</h2><p>Campos da tabela de atendimentos no IXC.</p></div><div id="ordersFields" class="fields-grid"></div></section>
+        <section class="settings-card lookup-card"><div class="card-heading"><span class="section-index">03 / TABELAS AUXILIARES</span><h2>Assuntos, técnicos e cidades</h2><p>Referências usadas para enriquecer os dados do painel.</p></div><div id="lookupFields" class="fields-grid"></div></section>
+        <section class="settings-card sync-card"><div class="card-heading"><span class="section-index">04 / ROTINA</span><h2>Sincronização</h2><p>Frequência, limites e validação das consultas.</p></div><div id="syncFields" class="fields-grid"></div></section>
+        <section class="settings-card preferences-card"><div class="card-heading"><span class="section-index">05 / EXPERIÊNCIA</span><h2>Preferências do painel</h2><p>Horários, atualização e organização dos assuntos.</p></div><div id="preferencesFields" class="fields-grid"></div></section>
+      </div>
+    </form>
+    <footer class="save-dock"><div><strong>Configurações do painel</strong><span>As alterações entram em vigor após salvar.</span></div><div id="dockFeedback" class="dock-feedback" aria-hidden="true" hidden></div><div class="dock-actions"><button id="discoverBtn" class="button secondary" type="button" disabled>Descobrir campos</button><button id="saveBtn" class="button primary" type="submit" form="settingsForm" disabled>Salvar alterações <span aria-hidden="true">→</span></button></div></footer>
+  </main>
+</body>
+</html>
